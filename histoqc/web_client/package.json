@@ -1,0 +1,15 @@
+{
+    "name": "@girder/histoqc",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Implementing https://github.com/choosehappy/HistoQC in DSA",
+    "homepage": "https://github.com/Theta-Tech-AI/histoqc-dsa-plugin",
+    "license": "Apache-2.0",
+    "peerDependencies": {
+        "@girder/core": "*"
+    },
+    "girderPlugin": {
+        "name": "histoqc",
+        "main": "./main.js"
+    }
+}
