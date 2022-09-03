@@ -143,7 +143,8 @@ def histoqcJob(job):
             job = Job().updateJob(job, log='HistoQC finished running. Collecting output.')
 
             for source_item in items:
-                output_subdir = os.path.join(tmp_output_dir, source_item['name'])
+                source_name = source_item['name']
+                output_subdir = os.path.join(tmp_output_dir, source_name)
                 job = Job().updateJob(job, log=f'output_subdir = {output_subdir}')
 
                 if not os.path.isdir(output_subdir) or not len(os.listdir(output_subdir)):
@@ -174,7 +175,7 @@ def histoqcJob(job):
                     item = Item().load(file['itemId'], user=user)
                     job = Job().updateJob(job, log=f'item = {file}')
 
-                    histoqc_type = histoqc_output_name.split('.')[1][4:]
+                    histoqc_type = histoqc_output_name[len(source_name)+1:-4]
                     job = Job().updateJob(job, log=f'histoqc_type = {histoqc_type}')
 
                     item.update({
@@ -226,7 +227,7 @@ def getHistoQCResultsHandler(self, id, params):
         })
         print(f'item_obj = {item_obj}')
 
-        histoqc_outputs = getHistoQCOutputsFromImageID(item['_id'], current_folder['_id'])
+        histoqc_outputs = getHistoQCOutputsFromImageID(item['_id'], output_folder['_id'])
         print(f'histoqc_outputs = {histoqc_outputs}')
         final_output.append({'source_image': item, 'histoqc_outputs': histoqc_outputs})
 
