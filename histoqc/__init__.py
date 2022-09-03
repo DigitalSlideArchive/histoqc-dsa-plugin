@@ -3,6 +3,8 @@ from girder.api import access
 from girder.api.rest import boundHandler, getApiUrl
 from girder.api.describe import Description, autoDescribeRoute
 from girder.models.folder import Folder
+from girder.models.upload import Upload
+from girder.models.item import Item
 from girder_jobs.constants import JobStatus
 from girder_jobs.models.job import Job
 from bson import ObjectId
@@ -11,6 +13,7 @@ import os
 import subprocess
 import traceback
 import tempfile
+from glob import glob
 
 
 histoqc_output_folder_name = 'histoqc-output-folder'
@@ -44,7 +47,8 @@ def generateHistoQCHandler(self, id, params):
     jobKwargs = {
         'folder': id,
         'apiroot': getApiUrl(),
-        'headers': getHeaders(self)
+        'headers': getHeaders(self),
+        'user': self.getCurrentUser()
     }
 
     job = Job().createLocalJob(
@@ -69,6 +73,34 @@ def getItemsInFolder(folder_id):
     return items
 
 
+def downloadItems(job, apiUrl, headers, items, directory):
+    for item in items:
+        job = Job().updateJob(job, log=f'item = {item}')
+        try:
+            url = apiUrl + '/item/' + str(item['_id']) + '/download'
+            job = Job().updateJob(job, log=f'url = {url}')
+
+            basename = os.path.basename(item['name'])
+            job = Job().updateJob(job, log=f'basename = {basename}')
+
+            tmp_image_path = os.path.join(directory, basename)
+            job = Job().updateJob(job, log=f'Downloading item to {tmp_image_path}...')
+
+            r = requests.get(url, headers=headers)
+            open(tmp_image_path, 'wb').write(r.content)
+            job = Job().updateJob(job, log=f'Downloaded item. File size = {os.path.getsize(tmp_image_path)}')
+
+        except BaseException as e:
+            job = Job().updateJob(job, log='Skipping image. ' + str(repr(e)) + ' ' + traceback.format_exc())
+
+
+def getHistoQCOutputsFromImageID(image_id):
+    return [h for h in Item().find({
+        'isHistoQC': True,
+        'histoqcSource': ObjectId(image_id)
+    })]
+
+
 def histoqcJob(job):
 
     print('Started histoqc job.')
@@ -76,12 +108,14 @@ def histoqcJob(job):
     apiUrl = job['kwargs']['apiroot']
     print(f'apiUrl = {apiUrl}')
     headers = job['kwargs']['headers']
+    user = job['kwargs']['user']
 
     job = Job().updateJob(job,
         log='Started histoqc job.',
         status=JobStatus.RUNNING)
 
     try:
+        output_folder = getHistoqcOutputFolder(user, headers)
 
         cwd = os.getcwd()
 
@@ -98,34 +132,68 @@ def histoqcJob(job):
         items = getItemsInFolder(folder_id)
         job = Job().updateJob(job, log=f'Found {len(items)} items in folder {folder_id}')
 
-        with tempfile.TemporaryDirectory() as tmp_input_dir:
-            job = Job().updateJob(job, log=f'Created temporary directory {tmp_input_dir}')
+        with tempfile.TemporaryDirectory() as tmp_output_dir:
+            job = Job().updateJob(job, log=f'tmp_output_dir = {tmp_output_dir}')
 
-            max_length_pixels = 1200
+            with tempfile.TemporaryDirectory() as tmp_input_dir:
+                job = Job().updateJob(job, log=f'Downloading items from folder into directory {tmp_input_dir}')
+                downloadItems(job, apiUrl, headers, items, tmp_input_dir)
+                job = Job().updateJob(job, log='Downloaded items.')
+                job = Job().updateJob(job, log='Started running histoqc on images. This may take a while.')
+                histoqc_output = subprocess.check_output(["python", "-m", "histoqc",
+                        '-o', tmp_output_dir,
+                        f'{tmp_input_dir}/*'])
 
-            for item in items:
-                job = Job().updateJob(job, log=f'item = {item}')
-                try:
-                    url = apiUrl + '/item/' + str(item['_id']) + '/download'
+            job = Job().updateJob(job, log='HistoQC finished running. Collecting output.')
+
+            for source_item in items:
+                output_subdir = os.path.join(tmp_output_dir, source_item['name'])
+                job = Job().updateJob(job, log=f'output_subdir = {output_subdir}')
+
+                if not os.path.isdir(output_subdir) or not len(os.listdir(output_subdir)):
+                    job = Job().updateJob(job, log=f'No output detected. Skipping.')
+                    continue
+
+                old_histoqc_outputs = getHistoQCOutputsFromImageID(source_item['_id'])
+                job = Job().updateJob(job, log=f'old_histoqc_outputs = {old_histoqc_outputs}')
+                for old_histoqc_output in old_histoqc_outputs:
+                    url = apiUrl + '/item/' + str(old_histoqc_output['_id'])
+                    requests.delete(url, headers=headers)
+                    job = Job().updateJob(job, log=f'Deleted {old_histoqc_output}')
+
+                for filePath in glob(output_subdir + "/*.png"):
+                    histoqc_output_name = os.path.basename(filePath)
+                    job = Job().updateJob(job, log=f'histoqc_output_name = {histoqc_output_name}')
+
+                    job = Job().updateJob(job, log=f'Uploading...')
+                    file = Upload().uploadFromFile(
+                        open(filePath, 'rb'), os.path.getsize(filePath),
+                        name = histoqc_output_name,
+                        parentType = 'folder',
+                        parent = output_folder,
+                        user = user
+                    )
+                    job = Job().updateJob(job, log=f'Uploaded. file = {file}')
+
+                    item = Item().load(file['itemId'], user=user)
+                    job = Job().updateJob(job, log=f'item = {file}')
+
+                    histoqc_type = histoqc_output_name.split('.')[1][4:]
+                    job = Job().updateJob(job, log=f'histoqc_type = {histoqc_type}')
+
+                    item.update({
+                        'isHistoQC': True,
+                        'histoqcSource': ObjectId(source_item['_id']),
+                        'histoqcType': histoqc_type
+                    })
+                    item = Item().updateItem(item)
+                    job = Job().updateJob(job, log=f'item = {item}')
+
+                    job = Job().updateJob(job, log=f'Generating thumbnail...')
+                    url = apiUrl + '/item/' + str(item['_id']) + '/tiles'
                     job = Job().updateJob(job, log=f'url = {url}')
-
-                    basename = os.path.basename(item['name'])
-                    job = Job().updateJob(job, log=f'basename = {basename}')
-
-                    tmp_image_path = os.path.join(tmp_input_dir, basename)
-                    job = Job().updateJob(job, log=f'Downloading item to {tmp_image_path}...')
-
-                    r = requests.get(url, headers=headers)
-                    open(tmp_image_path, 'wb').write(r.content)
-                    job = Job().updateJob(job, log=f'Downloaded item. File size = {os.path.getsize(tmp_image_path)}')
-
-                except BaseException as e:
-                    job = Job().updateJob(job, log='Skipping image. ' + str(repr(e)) + ' ' + traceback.format_exc())
-
-            job = Job().updateJob(job, log='Started running histoqc on images. This may take a while.')
-            histoqc_output = subprocess.check_output(["python", "-m", "histoqc", f'{tmp_input_dir}/*'])
-
-        job = Job().updateJob(job, log='HistoQC finished running. Collecting output.')
+                    response = requests.post(url, headers=headers)
+                    job = Job().updateJob(job, log=f'Generated thumbnail. Item finished uploading.')
 
         job = Job().updateJob(job,
             log='HistoQC job finished.',
@@ -148,7 +216,7 @@ def getHistoQCResultsHandler(self, id, params):
     print(f"Getting histo qc results.")
 
     print('Getting histoqc output folder...')
-    output_folder = getHistoqcOutputFolder(self)
+    output_folder = getHistoqcOutputFolder(self.getCurrentUser(), getHeaders(self))
     print(f'output_folder = {output_folder}')
 
     return {"hello": "world"}
@@ -164,8 +232,7 @@ def getHeaders(self):
 
 
 # or make it if it does not yet exist
-def getHistoqcOutputFolder(self):
-    user = self.getCurrentUser()
+def getHistoqcOutputFolder(user, headers):
     print(f'user = {user}')
 
     print(f'Searching for output folder {histoqc_output_folder_name}...')
@@ -188,7 +255,7 @@ def getHistoqcOutputFolder(self):
 
         # can probably do this with a call directly to Folder()...
 
-        response = requests.post(url, params=data, headers=getHeaders(self))
+        response = requests.post(url, params=data, headers=headers)
         print(f'response = {response}')
 
         found_folder = Folder().findOne({'name': histoqc_output_folder_name})
