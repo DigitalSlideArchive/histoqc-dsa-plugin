@@ -4,7 +4,16 @@ with open('README.rst') as readme_file:
     readme = readme_file.read()
 
 requirements = [
-    'girder>=3.0.0a1'
+    'girder>=3.0.0a1',
+    'openslide-python>=1.1.2',
+    'scikit-image>=0.18.1',
+    'scikit-learn>=0.24.1',
+    'numpy>=1.20.1',
+    'scipy>=1.6.1',
+    'matplotlib>=3.3.4',
+    'dill>=0.3.3',
+    'pytest',
+    'importlib-resources'
 ]
 
 setup(
