@@ -16,7 +16,7 @@ class GirderPlugin(plugin.GirderPlugin):
     def load(self, info):
 
         apiRoot = info['apiRoot']
-        
+
         apiRoot.folder.route('GET', (':id', 'histoqc-results'), getHistoQCResultsHandler)
         #info['apiRoot'].item.route('PUT', (':id', 'histoqc-upload'), uploadHandler)
         #info['apiRoot'].item.route('GET', (':id', 'thumbnail-rest'), restRequest)
@@ -32,7 +32,7 @@ def getHistoQCResultsHandler(self, id, params):
 
     print('Getting histoqc output folder...')
     output_folder = getHistoqcOutputFolder(self)
-    print('output_folder = {output_folder}')
+    print(f'output_folder = {output_folder}')
 
     return {"hello": "world"}
 

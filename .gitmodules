@@ -1,0 +1,3 @@
+[submodule "histoqcalgo"]
+	path = histoqcalgo
+	url = https://github.com/choosehappy/HistoQC
