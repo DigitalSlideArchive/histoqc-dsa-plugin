@@ -35,20 +35,13 @@ class GirderPlugin(plugin.GirderPlugin):
     Description('Run HistoQC on every image in the folder.')
 )
 def generateHistoQCHandler(self, id, params):
-    print(f"Generating histoqc...")
-    print('hello there')
-    cwd = os.getcwd()
-    histoqc_algo_path = os.path.join('..', 'histoqc', 'histoqcalgo')
-    print(f'histoqc_algo_path = {histoqc_algo_path}')
+    print(f"Starting histoqc job...")
 
-
-    os.chdir(histoqc_algo_path)
-
-    jobKwargs = {'key1': 'value1'}
-
+    print(f'id = {id}')
+    jobKwargs = {'folder': id}
     job = Job().createLocalJob(
         module='histoqc',
-        function='testJob',
+        function='histoqcJob',
         kwargs=jobKwargs,
         title='HistoQC Job',
         type='histoqc_job_type',
@@ -59,33 +52,38 @@ def generateHistoQCHandler(self, id, params):
     print(f'job = {job}')
     Job().scheduleJob(job)
     print('HistoQC job scheduled.')
-
-    #print(subprocess.check_output(["python", "-m", "histoqc", "*.svs"]))
-
-    os.chdir(cwd)
-    #subprocess.call("python -m histoqc --help", shell=True)
-
-    print('done')
-    return {'hello': 'world'}
+    return job
 
 
-def testJob(job):
+def histoqcJob(job):
 
     print('Started histoqc job.')
     print(f'job = {job}')
 
     job = Job().updateJob(job,
-        log='Started running histoqc',
+        log='Started histoqc job.',
         status=JobStatus.RUNNING)
 
     try:
-        
-        raise ValueError('test error')
-        
+        cwd = os.getcwd()
+        histoqc_algo_path = os.path.join('..', 'histoqc', 'histoqcalgo')
+        job = Job().updateJob(job,log=f'histoqc_algo_path = {histoqc_algo_path}')
+        os.chdir(histoqc_algo_path)
+
+        main_path = './histoqc/__main__.py'
+        if not os.path.isfile(main_path):
+            raise ValueError(f'Unable to find {main_path}. Did you check out the histoqc submodule?')
+
+        job = Job().updateJob(job,log='Started running histoqc on images. This may take a while.')
+        histoqc_output = subprocess.check_output(["python", "-m", "histoqc", "*.svs"])
+
+        job = Job().updateJob(job,log='HistoQC finished running. Collecting output.')
+
         job = Job().updateJob(job,
-            log='Simulating histoqc',
+            log='HistoQC job finished.',
             status=JobStatus.SUCCESS)
 
+        os.chdir(cwd)
         
     except Exception as e:
         Job().updateJob(job,
@@ -139,6 +137,8 @@ def getHistoqcOutputFolder(self):
             'public': False
         }
         print(f'data = {data}')
+
+        # can probably do this with a call directly to Folder()...
 
         response = requests.post(url, params=data, headers=get_headers(self))
         print(f'response = {response}')
