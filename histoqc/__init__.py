@@ -22,15 +22,10 @@ histoqc_output_folder_name = 'histoqc-output-folder'
 class GirderPlugin(plugin.GirderPlugin):
     DISPLAY_NAME = 'histoqc'
     CLIENT_SOURCE_PATH = 'web_client'
-
     def load(self, info):
-
         apiRoot = info['apiRoot']
-
         apiRoot.folder.route('POST', (':id', 'histoqc'), generateHistoQCHandler)
-        apiRoot.folder.route('GET', (':id', 'histoqc-results'), getHistoQCResultsHandler)
-        #info['apiRoot'].item.route('PUT', (':id', 'histoqc-upload'), uploadHandler)
-        #info['apiRoot'].item.route('GET', (':id', 'thumbnail-rest'), restRequest)
+        apiRoot.folder.route('GET', (':id', 'histoqc'), getHistoQCResultsHandler)
 
 
 @access.public
@@ -94,8 +89,9 @@ def downloadItems(job, apiUrl, headers, items, directory):
             job = Job().updateJob(job, log='Skipping image. ' + str(repr(e)) + ' ' + traceback.format_exc())
 
 
-def getHistoQCOutputsFromImageID(image_id):
+def getHistoQCOutputsFromImageID(image_id, folder_id):
     return [h for h in Item().find({
+        'folderId': ObjectId(folder_id),
         'isHistoQC': True,
         'histoqcSource': ObjectId(image_id)
     })]
@@ -154,7 +150,7 @@ def histoqcJob(job):
                     job = Job().updateJob(job, log=f'No output detected. Skipping.')
                     continue
 
-                old_histoqc_outputs = getHistoQCOutputsFromImageID(source_item['_id'])
+                old_histoqc_outputs = getHistoQCOutputsFromImageID(source_item['_id'], output_folder['_id'])
                 job = Job().updateJob(job, log=f'old_histoqc_outputs = {old_histoqc_outputs}')
                 for old_histoqc_output in old_histoqc_outputs:
                     url = apiUrl + '/item/' + str(old_histoqc_output['_id'])
@@ -219,8 +215,22 @@ def getHistoQCResultsHandler(self, id, params):
     output_folder = getHistoqcOutputFolder(self.getCurrentUser(), getHeaders(self))
     print(f'output_folder = {output_folder}')
 
-    return {"hello": "world"}
+    if id == '{id}': id = '63123b602acbb2914c9fd9c1'
+    current_folder = Folder().findOne({'_id': ObjectId(id)})
+    print(f'current_folder = {current_folder}')
 
+    final_output = []
+    for item in Folder().childItems(current_folder):
+        item_obj = Item().find({
+            '_id': ObjectId(item['_id']),
+        })
+        print(f'item_obj = {item_obj}')
+
+        histoqc_outputs = getHistoQCOutputsFromImageID(item['_id'], current_folder['_id'])
+        print(f'histoqc_outputs = {histoqc_outputs}')
+        final_output.append({'source_image': item, 'histoqc_outputs': histoqc_outputs})
+
+    return final_output
 
 
 def getHeaders(self):
@@ -263,3 +273,4 @@ def getHistoqcOutputFolder(user, headers):
     print(f'found_folder = {found_folder}')
     return found_folder
     
+
