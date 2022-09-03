@@ -5,6 +5,10 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.models.folder import Folder
 import requests
 
+import os
+import glob
+import subprocess
+
 
 histoqc_output_folder_name = 'histoqc-output-folder'
 
@@ -17,9 +21,34 @@ class GirderPlugin(plugin.GirderPlugin):
 
         apiRoot = info['apiRoot']
 
+        apiRoot.folder.route('POST', (':id', 'histoqc'), generateHistoQCHandler)
         apiRoot.folder.route('GET', (':id', 'histoqc-results'), getHistoQCResultsHandler)
         #info['apiRoot'].item.route('PUT', (':id', 'histoqc-upload'), uploadHandler)
         #info['apiRoot'].item.route('GET', (':id', 'thumbnail-rest'), restRequest)
+
+
+@access.public
+@boundHandler
+@autoDescribeRoute(
+    Description('Run HistoQC on every image in the folder.')
+)
+def generateHistoQCHandler(self, id, params):
+    print(f"Generating histoqc...")
+    print('hello there')
+    cwd = os.getcwd()
+    histoqc_algo_path = os.path.join('..', 'histoqc', 'histoqcalgo')
+    print(f'histoqc_algo_path = {histoqc_algo_path}')
+
+
+    os.chdir(histoqc_algo_path)
+    print(f'glob = {[f for f in glob.glob("*")]}')
+
+    print(subprocess.check_output(["python", "-m", "histoqc", "*.svs"]))
+
+    #subprocess.call("python -m histoqc --help", shell=True)
+
+    print('done')
+    return {'hello': 'world'}
 
 
 @access.public
