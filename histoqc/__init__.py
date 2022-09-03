@@ -5,7 +5,8 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.models.folder import Folder
 from girder_jobs.constants import JobStatus
 from girder_jobs.models.job import Job
-
+from girder_large_image.models.image_item import ImageItem
+from bson import ObjectId
 import requests
 import os
 import subprocess
@@ -38,6 +39,8 @@ def generateHistoQCHandler(self, id, params):
     print(f"Starting histoqc job...")
 
     print(f'id = {id}')
+    if id == '{id}': id = '63123b602acbb2914c9fd9c1'
+
     jobKwargs = {'folder': id}
     job = Job().createLocalJob(
         module='histoqc',
@@ -55,6 +58,12 @@ def generateHistoQCHandler(self, id, params):
     return job
 
 
+def getItemsInFolder(folder_id):
+    folder = Folder().findOne({'_id': ObjectId(folder_id)})
+    items = [item for item in Folder().childItems(folder)]
+    return items
+
+
 def histoqcJob(job):
 
     print('Started histoqc job.')
@@ -65,19 +74,36 @@ def histoqcJob(job):
         status=JobStatus.RUNNING)
 
     try:
+
+        folder_id = job['kwargs']['folder']
+        items = getItemsInFolder(folder_id)
+        job = Job().updateJob(job, log=f'Found {len(items)} items in folder {folder_id}')
+
+        max_width = 2000
+        max_height = 2000
+        for item in items:
+            job = Job().updateJob(job, log=f'item = {item}')
+            job = Job().updateJob(job, log=f'Getting thumbnail...')
+            imageData, imageMime = ImageItem().getThumbnail(item,
+                    width=max_width,
+                    height=max_height,
+                    encoding="TIFF")
+            job = Job().updateJob(job, log=f'Thumbnail imageMime = {imageMime}')
+            # open('/tmp/thumbnail.tif', 'wb').write(imageData)
+
         cwd = os.getcwd()
         histoqc_algo_path = os.path.join('..', 'histoqc', 'histoqcalgo')
-        job = Job().updateJob(job,log=f'histoqc_algo_path = {histoqc_algo_path}')
+        job = Job().updateJob(job, log=f'histoqc_algo_path = {histoqc_algo_path}')
         os.chdir(histoqc_algo_path)
 
         main_path = './histoqc/__main__.py'
         if not os.path.isfile(main_path):
             raise ValueError(f'Unable to find {main_path}. Did you check out the histoqc submodule?')
 
-        job = Job().updateJob(job,log='Started running histoqc on images. This may take a while.')
+        job = Job().updateJob(job, log='Started running histoqc on images. This may take a while.')
         histoqc_output = subprocess.check_output(["python", "-m", "histoqc", "*.svs"])
 
-        job = Job().updateJob(job,log='HistoQC finished running. Collecting output.')
+        job = Job().updateJob(job, log='HistoQC finished running. Collecting output.')
 
         job = Job().updateJob(job,
             log='HistoQC job finished.',
