@@ -3,11 +3,13 @@ from girder.api import access
 from girder.api.rest import boundHandler, getApiUrl
 from girder.api.describe import Description, autoDescribeRoute
 from girder.models.folder import Folder
-import requests
+from girder_jobs.constants import JobStatus
+from girder_jobs.models.job import Job
 
+import requests
 import os
-import glob
 import subprocess
+import traceback
 
 
 histoqc_output_folder_name = 'histoqc-output-folder'
@@ -41,14 +43,54 @@ def generateHistoQCHandler(self, id, params):
 
 
     os.chdir(histoqc_algo_path)
-    print(f'glob = {[f for f in glob.glob("*")]}')
 
-    print(subprocess.check_output(["python", "-m", "histoqc", "*.svs"]))
+    jobKwargs = {'key1': 'value1'}
 
+    job = Job().createLocalJob(
+        module='histoqc',
+        function='testJob',
+        kwargs=jobKwargs,
+        title='HistoQC Job',
+        type='histoqc_job_type',
+        user=self.getCurrentUser(),
+        public=True,
+        asynchronous=True,
+    )
+    print(f'job = {job}')
+    Job().scheduleJob(job)
+    print('HistoQC job scheduled.')
+
+    #print(subprocess.check_output(["python", "-m", "histoqc", "*.svs"]))
+
+    os.chdir(cwd)
     #subprocess.call("python -m histoqc --help", shell=True)
 
     print('done')
     return {'hello': 'world'}
+
+
+def testJob(job):
+
+    print('Started histoqc job.')
+    print(f'job = {job}')
+
+    job = Job().updateJob(job,
+        log='Started running histoqc',
+        status=JobStatus.RUNNING)
+
+    try:
+        
+        raise ValueError('test error')
+        
+        job = Job().updateJob(job,
+            log='Simulating histoqc',
+            status=JobStatus.SUCCESS)
+
+        
+    except Exception as e:
+        Job().updateJob(job,
+            log=str(repr(e)) + ' ' + traceback.format_exc(),
+            status=JobStatus.ERROR)
 
 
 @access.public
