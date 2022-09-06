@@ -251,19 +251,6 @@ def getHistoqcOutputFolder(user, headers):
 
     if not found_folder:
         print('Folder not found. Creating it.')
-
-        url = getApiUrl() + '/folder'
-        print(f'url = {url}')
-
-        data = {
-            'parentType': "user",
-            'parentId': str(user['_id']),
-            'name': histoqc_output_folder_name,
-            'reuseExisting': True,
-            'public': False
-        }
-        print(f'data = {data}')
-
         found_folder = Folder().createFolder(
             parent = user,
             parentType='user',
