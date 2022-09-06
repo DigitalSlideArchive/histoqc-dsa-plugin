@@ -264,12 +264,14 @@ def getHistoqcOutputFolder(user, headers):
         }
         print(f'data = {data}')
 
-        # can probably do this with a call directly to Folder()...
-
-        response = requests.post(url, params=data, headers=headers)
-        print(f'response = {response}')
-
-        found_folder = Folder().findOne({'name': histoqc_output_folder_name})
+        found_folder = Folder().createFolder(
+            parent = user,
+            parentType='user',
+            name = histoqc_output_folder_name,
+            description='Folder to store the histoqc outputs for a user',
+            public = False,
+            reuseExisting = True)
+        print('Folder created.')
 
     print(f'found_folder = {found_folder}')
     return found_folder
