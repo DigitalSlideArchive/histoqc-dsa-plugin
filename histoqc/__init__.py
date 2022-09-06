@@ -111,7 +111,7 @@ def histoqcJob(job):
         status=JobStatus.RUNNING)
 
     try:
-        output_folder = getHistoqcOutputFolder(user, headers)
+        output_folder = getHistoqcOutputFolder(user)
 
         cwd = os.getcwd()
 
@@ -213,7 +213,7 @@ def getHistoQCResultsHandler(self, id, params):
     print(f"Getting histo qc results.")
 
     print('Getting histoqc output folder...')
-    output_folder = getHistoqcOutputFolder(self.getCurrentUser(), getHeaders(self))
+    output_folder = getHistoqcOutputFolder(self.getCurrentUser())
     print(f'output_folder = {output_folder}')
 
     if id == '{id}': id = '63123b602acbb2914c9fd9c1'
@@ -243,24 +243,11 @@ def getHeaders(self):
 
 
 # or make it if it does not yet exist
-def getHistoqcOutputFolder(user, headers):
-    print(f'user = {user}')
-
-    print(f'Searching for output folder {histoqc_output_folder_name}...')
-    found_folder = Folder().findOne({'name': histoqc_output_folder_name})
-
-    if not found_folder:
-        print('Folder not found. Creating it.')
-        found_folder = Folder().createFolder(
-            parent = user,
-            parentType='user',
-            name = histoqc_output_folder_name,
-            description='Folder to store the histoqc outputs for a user',
-            public = False,
-            reuseExisting = True)
-        print('Folder created.')
-
-    print(f'found_folder = {found_folder}')
-    return found_folder
-    
-
+def getHistoqcOutputFolder(user):
+    return Folder().createFolder(
+        parent = user,
+        parentType='user',
+        name = histoqc_output_folder_name,
+        description='Folder to store the histoqc outputs for a user',
+        public = False,
+        reuseExisting = True) # reuseExisting will first search for an existing folder
