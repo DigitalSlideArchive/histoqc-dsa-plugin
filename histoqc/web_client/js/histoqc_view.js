@@ -117,11 +117,18 @@ export function renderHistoQC(callingThis, widget) {
     <div style="border: 1px red;">
 
       <h3>HistoQC</h3>
+      <br>
+
       <button id="histoqc-button" onclick="triggerHistoQCJob()">Click here to (re)run HistoQC on all images in this folder.</button>
+      <br>
+
       <textarea style="overflow:auto;" cols="100" rows="10" id="histoqc-status"></textarea>
+      <br>
+
       <div id="histoqc-table-div">
         <p>Loading histoqc results...</p>
       </div>
+      <br>
 
     </div>
   `
