@@ -117,6 +117,7 @@ export function renderHistoQC(callingThis, widget) {
     <div style="border: 1px red;">
 
       <h3>HistoQC</h3>
+      <a href="https://github.com/choosehappy/HistoQC" target="_blank">Github Link</a>
       <br>
 
       <button id="histoqc-button" onclick="triggerHistoQCJob()">Click here to (re)run HistoQC on all images in this folder.</button>
@@ -154,55 +155,56 @@ function generateTable() {
       return response.json();
     }).then( resp => {
       
+      let tableHTML = "<h4>HistoQC Outputs</h4>"
       let any_rows = false
 
-      let tableHTML = `
-        <h4>HistoQC Outputs</h4>
-        <p>Click on any image.</p>
-        <table>
-      `    
       let row1;
       for (const row of resp) {
         if (row['histoqc_outputs'].length > 0) {
+          any_rows = true
           row1 = row;
           break;
         }
       }
-      row1['histoqc_outputs'].sort((a, b) => a.histoqcType < b.histoqcType ? 1 : -1)
-      tableHTML += `<tr> <th> Source </th>`
-      row1['histoqc_outputs'].forEach(column => {
-        tableHTML += `<th> ${column.histoqcType} </th>`
-      })
-      tableHTML += `</tr>`
-      resp.forEach(row => {
-        if (row['histoqc_outputs'].length > 0) {
-            any_rows = true
-
-            tableHTML += '<tr>'
-            tableHTML += `
-                    <td>
-                        ${row['source_image'].name}
-                    </td>
-            `
-          row['histoqc_outputs'].sort((a, b) => a.histoqcType < b.histoqcType ? 1 : -1)
-          row["histoqc_outputs"].forEach(column => {
-            tableHTML += `<td style="padding:5px;"> 
-                    <a href="/#item/${column._id}">
-                    <img src="/api/v1/item/${column._id}/tiles/thumbnail"/>
-                    </a>
-                </td>`
-          })
-          tableHTML += '</tr>'
-        }
-      })
-      tableHTML += '</table>'
-      $(histoqc_table_id).html(tableHTML)
 
       if (any_rows) {
-        $(histoqc_table_id).show()
+        tableHTML += `
+          <p>Click on any image.</p>
+          <table>
+        `
+
+        row1['histoqc_outputs'].sort((a, b) => a.histoqcType < b.histoqcType ? 1 : -1)
+        tableHTML += `<tr> <th> Source </th>`
+        row1['histoqc_outputs'].forEach(column => {
+          tableHTML += `<th> ${column.histoqcType} </th>`
+        })
+        tableHTML += `</tr>`
+        resp.forEach(row => {
+          if (row['histoqc_outputs'].length > 0) {
+              tableHTML += '<tr>'
+              tableHTML += `
+                      <td>
+                          ${row['source_image'].name}
+                      </td>
+              `
+            row['histoqc_outputs'].sort((a, b) => a.histoqcType < b.histoqcType ? 1 : -1)
+            row["histoqc_outputs"].forEach(column => {
+              tableHTML += `<td style="padding:5px;"> 
+                      <a href="/#item/${column._id}">
+                      <img src="/api/v1/item/${column._id}/tiles/thumbnail"/>
+                      </a>
+                  </td>`
+            })
+            tableHTML += '</tr>'
+          }
+        })
+        tableHTML += '</table>'
       } else {
-        $(histoqc_table_id).hide()
+        tableHTML += "<p>No HistoQC outputs detected. Please rerun it.</p>"
       }
+
+      $(histoqc_table_id).html(tableHTML)
+      $(histoqc_table_id).show()
       
     });
 }
