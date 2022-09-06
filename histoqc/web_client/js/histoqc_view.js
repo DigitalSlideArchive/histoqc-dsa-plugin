@@ -7,8 +7,9 @@ function getHeaders() {
   }
 }
 
-var histoqc_status_id = '#trigger-job-status'
+var histoqc_status_id = '#histoqc-status'
 var histoqc_table_id = '#histoqc-table-div'
+var histoqc_button_id = "#histoqc-button"
 
 // the /api/v1 can be gotten from some girder javascript call
 function getApiRoot() { return window.location.origin + '/api/v1'}
@@ -37,7 +38,7 @@ export function triggerHistoQCJob() {
       console.log(JSON.stringify(myJson));
 
       const jobId = myJson['_id']
-      $('#trigger-job-button').hide()
+      $(histoqc_button_id).hide()
       $(histoqc_status_id).text('HistoQC job ' + jobId + ' has started. Please wait...')
       $(histoqc_status_id).show()
       $(histoqc_table_id).hide()
@@ -73,18 +74,21 @@ function watchJob(jobId) {
         const log = myJson['log']
         let text = ''
         for (const logLine of log) {
-          text = text + '<br/>' + logLine
+          const newline = '&#13;&#10;' // https://stackoverflow.com/a/8627926
+          text = text + newline.repeat(2) + logLine 
         }
         if (log.length > 0) {
           $(histoqc_status_id).html(text)
         }
+        $(histoqc_status_id).scrollTop($(histoqc_status_id)[0].scrollHeight) // https://stackoverflow.com/a/9170709
 
         const status = myJson['status']
         if (status > 2) {
           clearInterval(logTimer);
-          $(histoqc_status_id).hide()
+          //$(histoqc_status_id).hide()
           $(histoqc_table_id).show()
           generateTable()
+          $(histoqc_button_id).show()
         }
       });
 
@@ -109,15 +113,20 @@ export function renderHistoQC(callingThis, widget) {
   }
 
   window.triggerHistoQCJob = triggerHistoQCJob
-  const buttonHTML = `
-    <button id="trigger-job-button" onclick="triggerHistoQCJob()">Click here to (re)run HistoQC on all images in this folder.</button>
-    <p id="trigger-job-status">HistoQC status will go here.</p>
-    <div id="histoqc-table-div" />
-    <div id="parac-svg-container" />
+  const afterHTML = `
+    <div style="border: 1px red;">
+
+      <h3>HistoQC</h3>
+      <button id="histoqc-button" onclick="triggerHistoQCJob()">Click here to (re)run HistoQC on all images in this folder.</button>
+      <textarea style="overflow:auto;" cols="100" rows="10" id="histoqc-status"></textarea>
+      <div id="histoqc-table-div">
+        <p>Loading histoqc results...</p>
+      </div>
+
+    </div>
   `
-  widget.after(buttonHTML)
+  widget.after(afterHTML)
   $(histoqc_status_id).hide()
-  $('#histoqc-table-div').hide()
   generateTable()
 }
 
@@ -137,8 +146,11 @@ function generateTable() {
       console.log( response.headers.get("Content-Type"));
       return response.json();
     }).then( resp => {
+      
+      let any_rows = false
+
       let tableHTML = `
-        <h3>HistoQC Outputs</h3>
+        <h4>HistoQC Outputs</h4>
         <p>Click on any image.</p>
         <table>
       `    
@@ -157,6 +169,8 @@ function generateTable() {
       tableHTML += `</tr>`
       resp.forEach(row => {
         if (row['histoqc_outputs'].length > 0) {
+            any_rows = true
+
             tableHTML += '<tr>'
             tableHTML += `
                     <td>
@@ -170,13 +184,18 @@ function generateTable() {
                     <img src="/api/v1/item/${column._id}/tiles/thumbnail"/>
                     </a>
                 </td>`
-            console.log("HERES THE DONE RESPONSE: ", resp)
           })
           tableHTML += '</tr>'
         }
       })
       tableHTML += '</table>'
       $(histoqc_table_id).html(tableHTML)
-      $(histoqc_table_id).show()
+
+      if (any_rows) {
+        $(histoqc_table_id).show()
+      } else {
+        $(histoqc_table_id).hide()
+      }
+      
     });
 }
