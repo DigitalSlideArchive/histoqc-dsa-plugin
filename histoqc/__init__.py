@@ -154,8 +154,8 @@ def histoqcJob(job):
                 old_histoqc_outputs = getHistoQCOutputsFromImageID(source_item['_id'], output_folder['_id'])
                 job = Job().updateJob(job, log=f'old_histoqc_outputs = {old_histoqc_outputs}')
                 for old_histoqc_output in old_histoqc_outputs:
-                    url = apiUrl + '/item/' + str(old_histoqc_output['_id'])
-                    requests.delete(url, headers=headers)
+                    job = Job().updateJob(job, log=f'removing item...')
+                    Item().remove(old_histoqc_output)
                     job = Job().updateJob(job, log=f'Deleted {old_histoqc_output}')
 
                 for filePath in glob(output_subdir + "/*.png"):
