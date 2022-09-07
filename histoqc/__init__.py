@@ -97,6 +97,24 @@ def getHistoQCOutputsFromImageID(image_id, folder_id):
     })]
 
 
+def uploadHistoQCFile(*, path, output_name, source_id, histoqc_type, user):
+    file = Upload().uploadFromFile(
+        open(path, 'rb'), os.path.getsize(path),
+        name = output_name,
+        parentType = 'folder',
+        parent = getHistoqcOutputFolder(user),
+        user = user
+    )
+    item = Item().load(file['itemId'], user=user)
+    item.update({
+        'isHistoQC': True,
+        'histoqcSource': source_id,
+        'histoqcType': histoqc_type
+    })
+    item = Item().updateItem(item)
+    return item
+
+
 def histoqcJob(job):
 
     print('Started histoqc job.')
@@ -142,6 +160,9 @@ def histoqcJob(job):
 
             job = Job().updateJob(job, log='HistoQC finished running. Collecting output.')
 
+            tsv_path = os.path.join(tmp_output_dir, 'results.tsv')
+            job = Job().updateJob(job, log=f'tsv_path = {tsv_path}')
+
             for source_item in items:
                 source_name = source_item['name']
                 output_subdir = os.path.join(tmp_output_dir, source_name)
@@ -162,29 +183,17 @@ def histoqcJob(job):
                     histoqc_output_name = os.path.basename(filePath)
                     job = Job().updateJob(job, log=f'histoqc_output_name = {histoqc_output_name}')
 
-                    job = Job().updateJob(job, log=f'Uploading...')
-                    file = Upload().uploadFromFile(
-                        open(filePath, 'rb'), os.path.getsize(filePath),
-                        name = histoqc_output_name,
-                        parentType = 'folder',
-                        parent = output_folder,
-                        user = user
-                    )
-                    job = Job().updateJob(job, log=f'Uploaded. file = {file}')
-
-                    item = Item().load(file['itemId'], user=user)
-                    job = Job().updateJob(job, log=f'item = {file}')
-
                     histoqc_type = histoqc_output_name[len(source_name)+1:-4]
                     job = Job().updateJob(job, log=f'histoqc_type = {histoqc_type}')
 
-                    item.update({
-                        'isHistoQC': True,
-                        'histoqcSource': ObjectId(source_item['_id']),
-                        'histoqcType': histoqc_type
-                    })
-                    item = Item().updateItem(item)
-                    job = Job().updateJob(job, log=f'item = {item}')
+                    job = Job().updateJob(job, log=f'Uploading...')
+                    item = uploadHistoQCFile(
+                        path = filePath,
+                        output_name = histoqc_output_name,
+                        source_id = ObjectId(source_item['_id']),
+                        histoqc_type = histoqc_type,
+                        user = user)
+                    job = Job().updateJob(job, log=f'Uploaded.')
 
                     job = Job().updateJob(job, log=f'Generating thumbnail...')
                     url = apiUrl + '/item/' + str(item['_id']) + '/tiles'
