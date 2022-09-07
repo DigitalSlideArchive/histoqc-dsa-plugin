@@ -114,10 +114,12 @@ export function renderHistoQC(callingThis, widget) {
 
   window.triggerHistoQCJob = triggerHistoQCJob
   const afterHTML = `
-    <div style="border: 1px red;">
+    <div>
 
+      <hr><hr>
       <h3>HistoQC</h3>
       <a href="https://github.com/choosehappy/HistoQC" target="_blank">Github Link</a>
+      <br>
       <br>
 
       <button id="histoqc-button" onclick="triggerHistoQCJob()">Click here to (re)run HistoQC on all images in this folder.</button>
@@ -130,6 +132,7 @@ export function renderHistoQC(callingThis, widget) {
         <p>Loading histoqc results...</p>
       </div>
       <br>
+      <hr><hr>
 
     </div>
   `
