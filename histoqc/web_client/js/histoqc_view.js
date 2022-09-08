@@ -240,7 +240,20 @@ function generateHistoQCParallelPlot(results_tsv) {
     return false;
   });
   console.log('CURRENT_PARALLEL_ATTRIBUTES', CURRENT_PARALLEL_ATTRIBUTES)
-  
+
+  const data = parsed.map(function (d) {
+    const attr_value_dict = {
+      case_name: d["filename"],
+      gid: d["groupid"]
+    };
+    for (var i = 0; i < CURRENT_PARALLEL_ATTRIBUTES.length; i++) {
+      attr_value_dict[CURRENT_PARALLEL_ATTRIBUTES[i]] = 
+      d[CURRENT_PARALLEL_ATTRIBUTES[i]];
+    }
+    return attr_value_dict;
+  });
+  console.log('data', data)
+
   return html
 }
 
