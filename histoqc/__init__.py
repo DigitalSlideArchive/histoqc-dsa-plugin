@@ -238,8 +238,6 @@ def histoqcJob(job):
 
 
 def getInidividualHistoQCResults(*, folder, user):
-
-    print(f'user = {user}')
     output_folder = getHistoqcOutputFolder(user)
 
     final_output = []
@@ -250,16 +248,26 @@ def getInidividualHistoQCResults(*, folder, user):
         print(f'item_obj = {item_obj}')
 
         histoqc_outputs = getHistoQCOutputsFromSourceID(
-            source_id=item['_id'],
-            output_folder_id=output_folder['_id'])
+            source_id = item['_id'],
+            output_folder_id = output_folder['_id'])
         print(f'histoqc_outputs = {histoqc_outputs}')
         final_output.append({'source_image': item, 'histoqc_outputs': histoqc_outputs})
 
     return final_output
 
 
-def getFolderHistoQCResults():
-    pass
+def getGroupedHistoQCResults(*, folder, user):
+    output_folder = getHistoqcOutputFolder(user)
+    histoqc_output = getHistoQCOutputsFromSourceID(
+        source_id = folder['_id'],
+        output_folder_id = output_folder['_id']
+    )
+    print(f'histoqc_output = {histoqc_output}')
+    if not histoqc_output:
+        return None
+    else:
+        return histoqc_output[0]
+
 
 @access.public
 @boundHandler
@@ -274,11 +282,20 @@ def getHistoQCResultsHandler(self, id, params):
     print(f'current_folder = {current_folder}')
 
     user = self.getCurrentUser()
+    print(f'user = {user}')
+
     individual_results = getInidividualHistoQCResults(
         folder = current_folder,
         user = user)
     
-    return individual_results
+    grouped_results = getGroupedHistoQCResults(
+        folder = current_folder,
+        user = user)
+    
+    return {
+        'grouped': grouped_results,
+        'individual': individual_results
+    }
 
 
 def getHeaders(self):

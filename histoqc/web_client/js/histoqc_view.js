@@ -161,8 +161,10 @@ function generateTable() {
       let tableHTML = "<h4>HistoQC Outputs</h4>"
       let any_rows = false
 
+      const individual_histoqc_outputs = resp['individual']
+
       let row1;
-      for (const row of resp) {
+      for (const row of individual_histoqc_outputs) {
         if (row['histoqc_outputs'].length > 0) {
           any_rows = true
           row1 = row;
@@ -182,7 +184,7 @@ function generateTable() {
           tableHTML += `<th> ${column.histoqcType} </th>`
         })
         tableHTML += `</tr>`
-        resp.forEach(row => {
+        individual_histoqc_outputs.forEach(row => {
           if (row['histoqc_outputs'].length > 0) {
               tableHTML += '<tr>'
               tableHTML += `
