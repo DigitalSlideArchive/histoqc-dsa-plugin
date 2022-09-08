@@ -188,6 +188,9 @@ function generateHistoQCOutputs() {
 
 function generateHistoQCParallelPlot(results_tsv) {
   let html = '<h4>Parallel Plot For All Images In Folder</h4>'
+  html += '<textarea style="overflow:auto;" cols="100" rows="10" id="histoqc-parallel">'
+  html += results_tsv
+  html += '</textarea>'
   html += '<br><p>(Under construction)</p></br>'
   return html
 }
