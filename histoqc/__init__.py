@@ -89,11 +89,11 @@ def downloadItems(job, apiUrl, headers, items, directory):
             job = Job().updateJob(job, log='Skipping image. ' + str(repr(e)) + ' ' + traceback.format_exc())
 
 
-def getHistoQCOutputsFromSourceID(image_id, histqc_output_folder_id):
+def getHistoQCOutputsFromSourceID(*, source_id, output_folder_id):
     return [h for h in Item().find({
-        'folderId': ObjectId(histqc_output_folder_id),
+        'folderId': ObjectId(output_folder_id),
         'isHistoQC': True,
-        'histoqcSource': ObjectId(image_id)
+        'histoqcSource': ObjectId(source_id)
     })]
 
 
@@ -108,7 +108,7 @@ def uploadHistoQCFile(*, path, output_name, source_id, histoqc_type, user):
     item = Item().load(file['itemId'], user=user)
     item.update({
         'isHistoQC': True,
-        'histoqcSource': source_id,
+        'histoqcSource': ObjectId(source_id),
         'histoqcType': histoqc_type
     })
     item = Item().updateItem(item)
@@ -116,7 +116,9 @@ def uploadHistoQCFile(*, path, output_name, source_id, histoqc_type, user):
 
 
 def clearExistingHistoQCOutputs(*, source_id, output_folder_id, job):
-    old_histoqc_outputs = getHistoQCOutputsFromSourceID(source_id, output_folder_id)
+    old_histoqc_outputs = getHistoQCOutputsFromSourceID(
+        source_id=source_id,
+        output_folder_id=output_folder_id)
     job = Job().updateJob(job, log=f'old_histoqc_outputs = {old_histoqc_outputs}')
     for old_histoqc_output in old_histoqc_outputs:
         job = Job().updateJob(job, log=f'removing item...')
@@ -164,7 +166,6 @@ def histoqcJob(job):
                 downloadItems(job, apiUrl, headers, items, tmp_input_dir)
                 job = Job().updateJob(job, log='Downloaded items.')
                 job = Job().updateJob(job, log='Started running histoqc on images. This may take a while.')
-                #raise ValueError('Dev mode; not running histoqc')
                 histoqc_output = subprocess.check_output(["python", "-m", "histoqc",
                         '-o', tmp_output_dir,
                         f'{tmp_input_dir}/*'])
@@ -186,7 +187,7 @@ def histoqcJob(job):
                 source_id = folder_id,
                 histoqc_type = 'tsv',
                 user = user)
-            job = Job().updateJob(job, log=f'Uploaded tsv.')
+            job = Job().updateJob(job, log=f'Uploaded tsv. {item}')
 
             for source_item in items:
                 source_name = source_item['name']
@@ -259,7 +260,9 @@ def getHistoQCResultsHandler(self, id, params):
         })
         print(f'item_obj = {item_obj}')
 
-        histoqc_outputs = getHistoQCOutputsFromSourceID(item['_id'], output_folder['_id'])
+        histoqc_outputs = getHistoQCOutputsFromSourceID(
+            source_id=item['_id'],
+            output_folder_id=output_folder['_id'])
         print(f'histoqc_outputs = {histoqc_outputs}')
         final_output.append({'source_image': item, 'histoqc_outputs': histoqc_outputs})
 
