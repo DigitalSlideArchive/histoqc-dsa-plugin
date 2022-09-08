@@ -7,9 +7,12 @@ function getHeaders() {
   }
 }
 
+
 var histoqc_status_id = '#histoqc-status'
 var histoqc_table_id = '#histoqc-table-div'
 var histoqc_button_id = "#histoqc-button"
+var histoqc_parallel_id = "#histoqc-parallel-div"
+
 
 // the /api/v1 can be gotten from some girder javascript call
 function getApiRoot() { return window.location.origin + '/api/v1'}
@@ -128,6 +131,10 @@ export function renderHistoQC(callingThis, widget) {
       <textarea style="overflow:auto;" cols="100" rows="10" id="histoqc-status"></textarea>
       <br>
 
+      <div id="histoqc-parallel-div">
+      </div>
+      <br>
+
       <div id="histoqc-table-div">
         <p>Loading histoqc results...</p>
       </div>
@@ -179,7 +186,7 @@ function generateHistoQCOutputs() {
         const parallelHTML = generateHistoQCParallelPlot(results_tsv)
         const tableHTML = generateHistoQCTable(histoqc_response['individual'])
 
-        $(histoqc_table_id).html(parallelHTML + tableHTML)
+        $(histoqc_table_id).html(tableHTML)
         $(histoqc_table_id).show()
         
       })
@@ -193,7 +200,18 @@ function generateHistoQCParallelPlot(results_tsv) {
   html += '</textarea>'
   html += '<br><p>(Under construction)</p></br>'
 
-  parseParallelData(results_tsv)
+  const parsed = parseParallelData(results_tsv)
+
+  const parallel_div = $(histoqc_parallel_id)
+  parallel_div.empty();
+
+  const PARAC_SVG = d3.select(histoqc_parallel_id).append("svg")
+    .attr("id", "parac-svg")
+    .attr("width", parallel_div.width())
+    .attr("height", parallel_div.height())
+    .append("g")
+  console.log('PARAC_SVG', PARAC_SVG)
+
   return html
 }
 
@@ -253,7 +271,7 @@ function parseParallelData(results_tsv) {
 
   const dataset_text = results_tsv.split(/#dataset:\s?/)[1];  
 
-  const ORIGINAL_DATASET = d3.tsv.parse(dataset_text, function (d) {
+  const parsed = d3.tsv.parse(dataset_text, function (d) {
     if (d.hasOwnProperty("")) delete d[""];
     for (var key in d) {
       if ($.isNumeric(d[key])) {
@@ -271,6 +289,7 @@ function parseParallelData(results_tsv) {
     if (!d.hasOwnProperty("labelcol")) d["labelcol"] = "None";
     return d;
   });
-  console.log(ORIGINAL_DATASET)
+  console.log(parsed)
   
+  return parsed
 }
