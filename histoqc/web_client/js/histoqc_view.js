@@ -192,6 +192,8 @@ function generateHistoQCParallelPlot(results_tsv) {
   html += results_tsv
   html += '</textarea>'
   html += '<br><p>(Under construction)</p></br>'
+
+  parseParallelData(results_tsv)
   return html
 }
 
@@ -245,4 +247,30 @@ function generateHistoQCTable(histoqc_outputs) {
 
   return tableHTML
 
+}
+
+function parseParallelData(results_tsv) {
+
+  const dataset_text = results_tsv.split(/#dataset:\s?/)[1];  
+
+  const ORIGINAL_DATASET = d3.tsv.parse(dataset_text, function (d) {
+    if (d.hasOwnProperty("")) delete d[""];
+    for (var key in d) {
+      if ($.isNumeric(d[key])) {
+        d[key] = +d[key];
+      }
+    }
+    // add placeholder for cohortfinder results
+    if (!d.hasOwnProperty("embed_x")) d["embed_x"] = null;
+    if (!d.hasOwnProperty("embed_y")) d["embed_y"] = null;
+    // non-negative integers in cohortfinder results
+    if (!d.hasOwnProperty("groupid")) d["groupid"] = -1;
+    // 0 or 1 in cohortfinder results
+    if (!d.hasOwnProperty("testind")) d["testind"] = 2;
+    if (!d.hasOwnProperty("sitecol")) d["sitecol"] = "None";
+    if (!d.hasOwnProperty("labelcol")) d["labelcol"] = "None";
+    return d;
+  });
+  console.log(ORIGINAL_DATASET)
+  
 }
