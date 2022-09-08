@@ -89,9 +89,9 @@ def downloadItems(job, apiUrl, headers, items, directory):
             job = Job().updateJob(job, log='Skipping image. ' + str(repr(e)) + ' ' + traceback.format_exc())
 
 
-def getHistoQCOutputsFromImageID(image_id, folder_id):
+def getHistoQCOutputsFromSourceID(image_id, histqc_output_folder_id):
     return [h for h in Item().find({
-        'folderId': ObjectId(folder_id),
+        'folderId': ObjectId(histqc_output_folder_id),
         'isHistoQC': True,
         'histoqcSource': ObjectId(image_id)
     })]
@@ -113,6 +113,16 @@ def uploadHistoQCFile(*, path, output_name, source_id, histoqc_type, user):
     })
     item = Item().updateItem(item)
     return item
+
+
+def clearExistingHistoQCOutputs(*, source_id, output_folder_id, job):
+    old_histoqc_outputs = getHistoQCOutputsFromSourceID(source_id, output_folder_id)
+    job = Job().updateJob(job, log=f'old_histoqc_outputs = {old_histoqc_outputs}')
+    for old_histoqc_output in old_histoqc_outputs:
+        job = Job().updateJob(job, log=f'removing item...')
+        Item().remove(old_histoqc_output)
+        job = Job().updateJob(job, log=f'Deleted {old_histoqc_output}')
+    return job
 
 
 def histoqcJob(job):
@@ -154,6 +164,7 @@ def histoqcJob(job):
                 downloadItems(job, apiUrl, headers, items, tmp_input_dir)
                 job = Job().updateJob(job, log='Downloaded items.')
                 job = Job().updateJob(job, log='Started running histoqc on images. This may take a while.')
+                #raise ValueError('Dev mode; not running histoqc')
                 histoqc_output = subprocess.check_output(["python", "-m", "histoqc",
                         '-o', tmp_output_dir,
                         f'{tmp_input_dir}/*'])
@@ -162,6 +173,20 @@ def histoqcJob(job):
 
             tsv_path = os.path.join(tmp_output_dir, 'results.tsv')
             job = Job().updateJob(job, log=f'tsv_path = {tsv_path}')
+            if not os.path.isfile(tsv_path):
+                raise ValueError(f'Unable to find {tsv_path}')
+            job = clearExistingHistoQCOutputs(
+                source_id = folder_id,
+                output_folder_id = output_folder['_id'],
+                job=job)
+            job = Job().updateJob(job, log=f'Uploading tsv file...')
+            item = uploadHistoQCFile(
+                path = tsv_path,
+                output_name = f'{folder_id}.tsv',
+                source_id = folder_id,
+                histoqc_type = 'tsv',
+                user = user)
+            job = Job().updateJob(job, log=f'Uploaded tsv.')
 
             for source_item in items:
                 source_name = source_item['name']
@@ -172,12 +197,10 @@ def histoqcJob(job):
                     job = Job().updateJob(job, log=f'No output detected. Skipping.')
                     continue
 
-                old_histoqc_outputs = getHistoQCOutputsFromImageID(source_item['_id'], output_folder['_id'])
-                job = Job().updateJob(job, log=f'old_histoqc_outputs = {old_histoqc_outputs}')
-                for old_histoqc_output in old_histoqc_outputs:
-                    job = Job().updateJob(job, log=f'removing item...')
-                    Item().remove(old_histoqc_output)
-                    job = Job().updateJob(job, log=f'Deleted {old_histoqc_output}')
+                job = clearExistingHistoQCOutputs(
+                    source_id = source_item['_id'],
+                    output_folder_id = output_folder['_id'],
+                    job = job)
 
                 for filePath in glob(output_subdir + "/*.png"):
                     histoqc_output_name = os.path.basename(filePath)
@@ -236,7 +259,7 @@ def getHistoQCResultsHandler(self, id, params):
         })
         print(f'item_obj = {item_obj}')
 
-        histoqc_outputs = getHistoQCOutputsFromImageID(item['_id'], output_folder['_id'])
+        histoqc_outputs = getHistoQCOutputsFromSourceID(item['_id'], output_folder['_id'])
         print(f'histoqc_outputs = {histoqc_outputs}')
         final_output.append({'source_image': item, 'histoqc_outputs': histoqc_outputs})
 
