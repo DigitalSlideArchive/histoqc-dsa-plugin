@@ -237,24 +237,13 @@ def histoqcJob(job):
             status=JobStatus.ERROR)
 
 
-@access.public
-@boundHandler
-@autoDescribeRoute(
-    Description('Retrieve HistoQC results for every image in the folder')
-)
-def getHistoQCResultsHandler(self, id, params):
-    print(f"Getting histo qc results.")
+def getInidividualHistoQCResults(*, folder, user):
 
-    print('Getting histoqc output folder...')
-    output_folder = getHistoqcOutputFolder(self.getCurrentUser())
-    print(f'output_folder = {output_folder}')
-
-    if id == '{id}': id = '63123b602acbb2914c9fd9c1'
-    current_folder = Folder().findOne({'_id': ObjectId(id)})
-    print(f'current_folder = {current_folder}')
+    print(f'user = {user}')
+    output_folder = getHistoqcOutputFolder(user)
 
     final_output = []
-    for item in Folder().childItems(current_folder):
+    for item in Folder().childItems(folder):
         item_obj = Item().find({
             '_id': ObjectId(item['_id']),
         })
@@ -267,6 +256,29 @@ def getHistoQCResultsHandler(self, id, params):
         final_output.append({'source_image': item, 'histoqc_outputs': histoqc_outputs})
 
     return final_output
+
+
+def getFolderHistoQCResults():
+    pass
+
+@access.public
+@boundHandler
+@autoDescribeRoute(
+    Description('Retrieve HistoQC results for every image in the folder')
+)
+def getHistoQCResultsHandler(self, id, params):
+    print(f"Getting histo qc results.")
+
+    if id == '{id}': id = '63123b602acbb2914c9fd9c1'
+    current_folder = Folder().findOne({'_id': ObjectId(id)})
+    print(f'current_folder = {current_folder}')
+
+    user = self.getCurrentUser()
+    individual_results = getInidividualHistoQCResults(
+        folder = current_folder,
+        user = user)
+    
+    return individual_results
 
 
 def getHeaders(self):
