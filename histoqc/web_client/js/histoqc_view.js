@@ -176,15 +176,21 @@ function generateHistoQCOutputs() {
 
         console.log(results_tsv)
 
+        const parallelHTML = generateHistoQCParallelPlot(results_tsv)
         const tableHTML = generateHistoQCTable(histoqc_response['individual'])
 
-        $(histoqc_table_id).html(tableHTML)
+        $(histoqc_table_id).html(parallelHTML + tableHTML)
         $(histoqc_table_id).show()
         
       })
     })
 }
 
+function generateHistoQCParallelPlot(results_tsv) {
+  let html = '<h4>Parallel Plot For All Images In Folder</h4>'
+  html += '<br><p>(Under construction)</p></br>'
+  return html
+}
 
 function generateHistoQCTable(histoqc_outputs) {
 
@@ -201,6 +207,8 @@ function generateHistoQCTable(histoqc_outputs) {
   }
 
   if (any_rows) {
+
+    tableHTML = "<h4>HistoQC Individual Outputs</h4><table>"
 
     row1['histoqc_outputs'].sort((a, b) => a.histoqcType < b.histoqcType ? 1 : -1)
     tableHTML += `<tr> <th> Source </th>`
