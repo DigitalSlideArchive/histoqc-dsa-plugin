@@ -138,10 +138,12 @@ export function renderHistoQC(callingThis, widget) {
   `
   widget.after(afterHTML)
   $(histoqc_status_id).hide()
-  generateTable()
+  generateHistoQCOutputs()
 }
 
-function generateTable() {
+
+function generateHistoQCOutputs() {
+
   const url = getApiRoot() + '/folder/' + getFolderId() + '/histoqc'
   const details = {
     method: 'get',
@@ -156,60 +158,80 @@ function generateTable() {
       }
       console.log( response.headers.get("Content-Type"));
       return response.json();
-    }).then( resp => {
+    }).then( histoqc_response => {
       
-      let tableHTML = "<h4>HistoQC Outputs</h4>"
-      let any_rows = false
+      const grouped_histoqc_output = histoqc_response['grouped']
+      const grouped_url = getApiRoot() + '/item/' + grouped_histoqc_output['_id'] + '/download'
+      //console.log(grouped_url)
 
-      const individual_histoqc_outputs = resp['individual']
-
-      let row1;
-      for (const row of individual_histoqc_outputs) {
-        if (row['histoqc_outputs'].length > 0) {
-          any_rows = true
-          row1 = row;
-          break;
+      fetch(grouped_url, details)
+      .then( grouped_response => {
+        if ( grouped_response.status !== 200 ) {
+          console.log('Looks like there was a problem. Status Code: ' + response.status);
+          return;
         }
-      }
+        //console.log(grouped_response)
+        return grouped_response.text();
+      }).then(results_tsv => {
 
-      if (any_rows) {
-        tableHTML += `
-          <p>Click on any image.</p>
-          <table>
-        `
+        console.log(results_tsv)
 
-        row1['histoqc_outputs'].sort((a, b) => a.histoqcType < b.histoqcType ? 1 : -1)
-        tableHTML += `<tr> <th> Source </th>`
-        row1['histoqc_outputs'].forEach(column => {
-          tableHTML += `<th> ${column.histoqcType} </th>`
+        const tableHTML = generateHistoQCTable(histoqc_response['individual'])
+
+        $(histoqc_table_id).html(tableHTML)
+        $(histoqc_table_id).show()
+        
+      })
+    })
+}
+
+
+function generateHistoQCTable(histoqc_outputs) {
+
+  let tableHTML = ""
+  let any_rows = false
+
+  let row1;
+  for (const row of histoqc_outputs) {
+    if (row['histoqc_outputs'].length > 0) {
+      any_rows = true
+      row1 = row;
+      break;
+    }
+  }
+
+  if (any_rows) {
+
+    row1['histoqc_outputs'].sort((a, b) => a.histoqcType < b.histoqcType ? 1 : -1)
+    tableHTML += `<tr> <th> Source </th>`
+    row1['histoqc_outputs'].forEach(column => {
+      tableHTML += `<th> ${column.histoqcType} </th>`
+    })
+    tableHTML += `</tr>`
+    histoqc_outputs.forEach(row => {
+      if (row['histoqc_outputs'].length > 0) {
+          tableHTML += '<tr>'
+          tableHTML += `
+                  <td>
+                      ${row['source_image'].name}
+                  </td>
+          `
+        row['histoqc_outputs'].sort((a, b) => a.histoqcType < b.histoqcType ? 1 : -1)
+        row["histoqc_outputs"].forEach(column => {
+          tableHTML += `<td style="padding:5px;"> 
+                  <a href="/#item/${column._id}">
+                  <img src="/api/v1/item/${column._id}/tiles/thumbnail"/>
+                  </a>
+              </td>`
         })
-        tableHTML += `</tr>`
-        individual_histoqc_outputs.forEach(row => {
-          if (row['histoqc_outputs'].length > 0) {
-              tableHTML += '<tr>'
-              tableHTML += `
-                      <td>
-                          ${row['source_image'].name}
-                      </td>
-              `
-            row['histoqc_outputs'].sort((a, b) => a.histoqcType < b.histoqcType ? 1 : -1)
-            row["histoqc_outputs"].forEach(column => {
-              tableHTML += `<td style="padding:5px;"> 
-                      <a href="/#item/${column._id}">
-                      <img src="/api/v1/item/${column._id}/tiles/thumbnail"/>
-                      </a>
-                  </td>`
-            })
-            tableHTML += '</tr>'
-          }
-        })
-        tableHTML += '</table>'
-      } else {
-        tableHTML += "<p>No HistoQC outputs detected. Please rerun it.</p>"
+        tableHTML += '</tr>'
       }
+    })
+    tableHTML += '</table>'
+  } else {
+    tableHTML += "<p>No HistoQC outputs detected. Please rerun it.</p>"
+  }
 
-      $(histoqc_table_id).html(tableHTML)
-      $(histoqc_table_id).show()
-      
-    });
+  return tableHTML
+
 }
