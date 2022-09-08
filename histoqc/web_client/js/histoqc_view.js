@@ -205,13 +205,42 @@ function generateHistoQCParallelPlot(results_tsv) {
   const parallel_div = $(histoqc_parallel_id)
   parallel_div.empty();
 
+  const parac_width = parallel_div.width()
+  const parac_height = parallel_div.height()
+  console.log('parac_width', parac_width)
+  console.log('parac_height', parac_height)
+
   const PARAC_SVG = d3.select(histoqc_parallel_id).append("svg")
     .attr("id", "parac-svg")
-    .attr("width", parallel_div.width())
-    .attr("height", parallel_div.height())
+    .attr("width", parac_width)
+    .attr("height", parac_height)
     .append("g")
   console.log('PARAC_SVG', PARAC_SVG)
 
+  const xScale = d3.scale.ordinal().rangePoints([0, parac_width], 1),
+      yScale = {},
+      dragging = {};
+
+  const line = d3.svg.line().interpolate('linear')
+  const axis = d3.svg.axis().ticks(5).orient("right")
+
+  // build feature list
+  const ORIGINAL_FEATURE_LIST = Object.keys(parsed[0]);
+  // update current selection
+  const ORIGINAL_CASE_LIST = parsed.map(function (d) {
+    return d["filename"];
+  });
+  const PARA_COOR_SELECTED = ORIGINAL_CASE_LIST;
+  const CURRENT_PARALLEL_ATTRIBUTES = ORIGINAL_FEATURE_LIST.filter(function(d) {
+    // in DEFAULT_PARAC_ATTRIBUTES and is numeric
+    if (typeof(parsed[0][d]) == "number" && 
+      DEFAULT_PARAC_ATTRIBUTES.indexOf(d) != -1) {
+      return true;
+    }
+    return false;
+  });
+  console.log('CURRENT_PARALLEL_ATTRIBUTES', CURRENT_PARALLEL_ATTRIBUTES)
+  
   return html
 }
 
@@ -293,3 +322,42 @@ function parseParallelData(results_tsv) {
   
   return parsed
 }
+
+
+var DEFAULT_PARAC_ATTRIBUTES = [
+  "levels", 
+  "height", 
+  "width", 
+  "mpp_x", 
+  "mpp_y", 
+  "Magnification", 
+  "pen_markings", 
+  "coverslip_edge", 
+  "bubble", 
+  "nonwhite", 
+  "dark", 
+  "percent_small_tissue_removed", 
+  "percent_small_tissue_filled", 
+  "percent_blurry", 
+  "spur_pixels", 
+  "template1_MSE_hist", 
+  "template2_MSE_hist", 
+  "template3_MSE_hist", 
+  "template4_MSE_hist", 
+  "michelson_contrast", 
+  "rms_contrast", 
+  "grayscale_brightness", 
+  "chan1_brightness", 
+  "chan2_brightness", 
+  "chan3_brightness", 
+  "deconv_c0_mean", 
+  "deconv_c1_mean", 
+  "deconv_c2_mean", 
+  "chuv1_brightness_YUV",
+  "chuv2_brightness_YUV",
+  "chuv3_brightness_YUV",
+  "chan1_brightness_YUV",
+  "chan2_brightness_YUV",
+  "chan3_brightness_YUV",
+  "pixels_to_use"
+];
