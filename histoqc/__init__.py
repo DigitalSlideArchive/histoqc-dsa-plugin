@@ -5,6 +5,7 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.models.folder import Folder
 from girder.models.upload import Upload
 from girder.models.item import Item
+from girder.models.file import File
 from girder_jobs.constants import JobStatus
 from girder_jobs.models.job import Job
 from bson import ObjectId
@@ -72,18 +73,21 @@ def downloadItems(job, apiUrl, headers, items, directory):
     for item in items:
         job = Job().updateJob(job, log=f'item = {item}')
         try:
-            url = apiUrl + '/item/' + str(item['_id']) + '/download'
-            job = Job().updateJob(job, log=f'url = {url}')
 
+            file = Item().childFiles(item)[0]
+            job = Job().updateJob(job, log=f'file = {file}')
+
+            local_path = File().getLocalFilePath(file)
+            job = Job().updateJob(job, log=f'local_path = {local_path}')
+            
             basename = os.path.basename(item['name'])
             job = Job().updateJob(job, log=f'basename = {basename}')
 
             tmp_image_path = os.path.join(directory, basename)
-            job = Job().updateJob(job, log=f'Downloading item to {tmp_image_path}...')
+            job = Job().updateJob(job, log=f'Linking item to {tmp_image_path}...')
 
-            r = requests.get(url, headers=headers)
-            open(tmp_image_path, 'wb').write(r.content)
-            job = Job().updateJob(job, log=f'Downloaded item. File size = {os.path.getsize(tmp_image_path)}')
+            os.symlink(local_path, tmp_image_path)
+            job = Job().updateJob(job, log=f'Linked item. File size = {os.path.getsize(tmp_image_path)}')
 
         except BaseException as e:
             job = Job().updateJob(job, log='Skipping image. ' + str(repr(e)) + ' ' + traceback.format_exc())
@@ -265,8 +269,7 @@ def getGroupedHistoQCResults(*, folder, user):
     print(f'histoqc_output = {histoqc_output}')
     if not histoqc_output:
         return None
-    else:
-        return histoqc_output[0]
+    return histoqc_output[0]
 
 
 @access.public
