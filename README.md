@@ -16,4 +16,9 @@ Then, assuming that DSA is running, go to the Slicer CLI plugin config:
 Type in the tag of the image you just build above and click **Import Image**:
 ![image](https://user-images.githubusercontent.com/34462353/199604605-20cfde51-6735-46a6-a0ad-fcc5a013b7d2.png)
 
-Then, navigate to an pathology image in the HistomicsUI view:
+Then, navigate to an pathology image and click **Open In HistomicsUI**:
+![image](https://user-images.githubusercontent.com/34462353/199604996-fdf13639-0a46-4997-a551-ca729e79931e.png)
+
+Now, navigate to the HistoQC analysis and click Submit to begin running HistoQC:
+![image](https://user-images.githubusercontent.com/34462353/199605419-8711c99d-1080-4abc-b036-0b014daedca8.png)
+
