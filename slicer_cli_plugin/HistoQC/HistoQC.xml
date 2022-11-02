@@ -3,15 +3,41 @@
   <category>Quality Control  Tools</category>
   <title>HistoQC</title>
   <description><![CDATA[Performs quality control pipeline on digital pathology images.]]></description>
-  <version>0.1.0.$Revision$(alpha)</version>
+  <version>0.2.0.$Revision$(alpha)</version>
   <documentation-url>http://histoqc.com</documentation-url>
   <license/>
-  <contributor>Andrew Janowczyk</contributor>
+  <contributor>Andrew Janowczyk, Robert Toth</contributor>
   <acknowledgements><![CDATA[This work is part of the NCI ITCR 1U01CA239055-01 https://projectreporter.nih.gov/project_info_description.cfm?aid=9734599&icde=43910260&ddparam=&ddvalue=&ddsub=&cr=1&csb=default&cs=ASC&pball=]]></acknowledgements>
 
   <parameters>
+    <label>Input Images</label>
+    <description>Which image(s) should we run HistoQC on?</description>
+
+    <image>
+        <name>input_image</name>
+        <longflag>image</longflag>
+        <description><![CDATA[An input image to run HistoQC on.]]></description>
+        <label>Input image</label>
+        <channel>input</channel>
+      </image>
+      
+  </parameters>
+
+  <parameters>
+    <label>Basic HistoQC Configuration</label>
+    <description>The parameters that will be passed into HistoQC upon each image it analyzes.</description>
+    <boolean>
+      <name>test</name>
+      <label>test</label>
+      <longflag>--test</longflag>
+      <description><![CDATA[Test description]]></description>
+      <flag>t</flag> <default>false</default>
+    </boolean>
+  </parameters>
+
+  <parameters advanced="true">
       <label>
-    HistoQC running Parameters
+    Advanced HistoQC running Parameters
     </label>
     <description>
     Parameters which affect the way HistoQC runs, excluding configuration options which should be specified in a config.ini 
