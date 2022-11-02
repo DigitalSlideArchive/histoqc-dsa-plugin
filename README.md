@@ -1,6 +1,7 @@
 # histoqc-dsa-plugin
 
 ## Slicer CLI Integration
+### Importing into DSA
 To run the histoqc in batch mode, go into the proper subdirectory and rebuild the image:
 
 ```bash
@@ -16,6 +17,9 @@ Then, assuming that DSA is running, go to the Slicer CLI plugin config:
 Type in the tag of the image you just build above and click **Import Image**:
 ![image](https://user-images.githubusercontent.com/34462353/199604605-20cfde51-6735-46a6-a0ad-fcc5a013b7d2.png)
 
+You can repeat these steps any time you make an update to the `slicer_cli_plugin` code.
+
+### Running HistoQC
 Then, navigate to an pathology image and click **Open In HistomicsUI**:
 ![image](https://user-images.githubusercontent.com/34462353/199604996-fdf13639-0a46-4997-a551-ca729e79931e.png)
 
