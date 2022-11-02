@@ -90,7 +90,7 @@ function watchJob(jobId) {
           clearInterval(logTimer);
           //$(histoqc_status_id).hide()
           $(histoqc_table_id).show()
-          generateTable()
+          generateHistoQCTable()
           $(histoqc_button_id).show()
         }
       });
@@ -194,67 +194,69 @@ function generateHistoQCOutputs() {
 }
 
 function generateHistoQCParallelPlot(results_tsv) {
-  let html = '<h4>Parallel Plot For All Images In Folder</h4>'
-  html += '<textarea style="overflow:auto;" cols="100" rows="10" id="histoqc-parallel">'
-  html += results_tsv
-  html += '</textarea>'
-  html += '<br><p>(Under construction)</p></br>'
+  // let html = '<h4>Parallel Plot For All Images In Folder</h4>'
+  // html += '<textarea style="overflow:auto;" cols="100" rows="10" id="histoqc-parallel">'
+  // html += results_tsv
+  // html += '</textarea>'
+  // html += '<br><p>(Under construction)</p></br>'
 
-  const parsed = parseParallelData(results_tsv)
+  // const parsed = parseParallelData(results_tsv)
 
-  const parallel_div = $(histoqc_parallel_id)
-  parallel_div.empty();
+  // const parallel_div = $(histoqc_parallel_id)
+  // parallel_div.empty();
 
-  const parac_width = parallel_div.width()
-  const parac_height = parallel_div.height()
-  console.log('parac_width', parac_width)
-  console.log('parac_height', parac_height)
+  // const parac_width = parallel_div.width()
+  // const parac_height = parallel_div.height()
+  // console.log('parac_width', parac_width)
+  // console.log('parac_height', parac_height)
 
-  const PARAC_SVG = d3.select(histoqc_parallel_id).append("svg")
-    .attr("id", "parac-svg")
-    .attr("width", parac_width)
-    .attr("height", parac_height)
-    .append("g")
-  console.log('PARAC_SVG', PARAC_SVG)
+  // const PARAC_SVG = d3.select(histoqc_parallel_id).append("svg")
+  //   .attr("id", "parac-svg")
+  //   .attr("width", parac_width)
+  //   .attr("height", parac_height)
+  //   .append("g")
+  // console.log('PARAC_SVG', PARAC_SVG)
 
-  const xScale = d3.scale.ordinal().rangePoints([0, parac_width], 1),
-      yScale = {},
-      dragging = {};
+  // const xScale = d3.scale.ordinal().rangePoints([0, parac_width], 1),
+  //     yScale = {},
+  //     dragging = {};
 
-  const line = d3.svg.line().interpolate('linear')
-  const axis = d3.svg.axis().ticks(5).orient("right")
+  // const line = d3.svg.line().interpolate('linear')
+  // const axis = d3.svg.axis().ticks(5).orient("right")
 
-  // build feature list
-  const ORIGINAL_FEATURE_LIST = Object.keys(parsed[0]);
-  // update current selection
-  const ORIGINAL_CASE_LIST = parsed.map(function (d) {
-    return d["filename"];
-  });
-  const PARA_COOR_SELECTED = ORIGINAL_CASE_LIST;
-  const CURRENT_PARALLEL_ATTRIBUTES = ORIGINAL_FEATURE_LIST.filter(function(d) {
-    // in DEFAULT_PARAC_ATTRIBUTES and is numeric
-    if (typeof(parsed[0][d]) == "number" && 
-      DEFAULT_PARAC_ATTRIBUTES.indexOf(d) != -1) {
-      return true;
-    }
-    return false;
-  });
-  console.log('CURRENT_PARALLEL_ATTRIBUTES', CURRENT_PARALLEL_ATTRIBUTES)
+  // // build feature list
+  // const ORIGINAL_FEATURE_LIST = Object.keys(parsed[0]);
+  // // update current selection
+  // const ORIGINAL_CASE_LIST = parsed.map(function (d) {
+  //   return d["filename"];
+  // });
+  // const PARA_COOR_SELECTED = ORIGINAL_CASE_LIST;
+  // const CURRENT_PARALLEL_ATTRIBUTES = ORIGINAL_FEATURE_LIST.filter(function(d) {
+  //   // in DEFAULT_PARAC_ATTRIBUTES and is numeric
+  //   if (typeof(parsed[0][d]) == "number" && 
+  //     DEFAULT_PARAC_ATTRIBUTES.indexOf(d) != -1) {
+  //     return true;
+  //   }
+  //   return false;
+  // });
+  // console.log('CURRENT_PARALLEL_ATTRIBUTES', CURRENT_PARALLEL_ATTRIBUTES)
 
-  const data = parsed.map(function (d) {
-    const attr_value_dict = {
-      case_name: d["filename"],
-      gid: d["groupid"]
-    };
-    for (var i = 0; i < CURRENT_PARALLEL_ATTRIBUTES.length; i++) {
-      attr_value_dict[CURRENT_PARALLEL_ATTRIBUTES[i]] = 
-      d[CURRENT_PARALLEL_ATTRIBUTES[i]];
-    }
-    return attr_value_dict;
-  });
-  console.log('data', data)
+  // const data = parsed.map(function (d) {
+  //   const attr_value_dict = {
+  //     case_name: d["filename"],
+  //     gid: d["groupid"]
+  //   };
+  //   for (var i = 0; i < CURRENT_PARALLEL_ATTRIBUTES.length; i++) {
+  //     attr_value_dict[CURRENT_PARALLEL_ATTRIBUTES[i]] = 
+  //     d[CURRENT_PARALLEL_ATTRIBUTES[i]];
+  //   }
+  //   return attr_value_dict;
+  // });
+  // console.log('data', data)
 
-  return html
+  // const selected_cases = dataset.map(function (d) {return d["filename"];});
+
+  return ''
 }
 
 function generateHistoQCTable(histoqc_outputs) {
