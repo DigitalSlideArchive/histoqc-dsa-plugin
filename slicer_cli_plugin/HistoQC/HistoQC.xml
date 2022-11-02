@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<executable>
+  <category>Quality Control  Tools</category>
+  <title>HistoQC</title>
+  <description><![CDATA[Performs quality control pipeline on digital pathology images.]]></description>
+  <version>0.1.0.$Revision$(alpha)</version>
+  <documentation-url>http://histoqc.com</documentation-url>
+  <license/>
+  <contributor>Andrew Janowczyk</contributor>
+  <acknowledgements><![CDATA[This work is part of the NCI ITCR 1U01CA239055-01 https://projectreporter.nih.gov/project_info_description.cfm?aid=9734599&icde=43910260&ddparam=&ddvalue=&ddsub=&cr=1&csb=default&cs=ASC&pball=]]></acknowledgements>
+
+  <parameters>
+      <label>
+    HistoQC running Parameters
+    </label>
+    <description>
+    Parameters which affect the way HistoQC runs, excluding configuration options which should be specified in a config.ini 
+    </description>
+    
+<!-- boolean params-->    
+    <boolean>
+        <name>force</name>
+        <label>force</label>
+        <longflag>--force</longflag>
+        <description><![CDATA[force overwriting of existing files]]></description>
+        <flag>f</flag> <default>false</default>
+    </boolean>
+
+    <boolean>
+        <name>symlinkoff</name>
+        <label>symlinkoff</label>
+        <flag>s</flag>
+        <longflag>--symlinkoff</longflag>
+        <description><![CDATA[turn OFF symlink creation]]></description>
+        <default>false</default>
+    </boolean>
+
+<!-- integer params-->    
+    <integer>
+      <name>batch</name>
+      <flag>-b</flag>
+      <longflag>--batch</longflag>
+      <description><![CDATA[break results file into subsets of this size]]></description>
+      <label>batchsize</label>
+      <default>10000</default> <!-- in the original histoqc, this is infinite --> 
+    </integer>
+    
+    <integer>
+      <name>nthreads</name>
+      <flag>-n</flag>
+      <longflag>--nthreads</longflag>
+      <description><![CDATA[number of threads to launch]]></description>
+      <label>nthreads</label>
+      <default>1</default>
+    </integer>
+    
+<!-- string params-->        
+    
+    <string>
+      <name>outdir</name>
+      <flag>-o</flag>
+      <longflag>--outdir</longflag>
+      <description><![CDATA[output directory, defaults to ./histoqc_output_DATE_TIME]]></description>
+      <label>outdir</label>
+      <default>./histoqc_output_DATE_TIME</default>
+    </string>
+    <string>
+      <name>basepath</name>
+      <flag>-p</flag>
+      <longflag>--basepath</longflag>
+      <description><![CDATA[base path to add to file names, helps when producing data using existing output file as input]]></description>
+      <label>basepath</label>
+      <default>""</default>
+    </string>
+    <string>
+      <name>config</name>
+      <flag>-c</flag>
+      <longflag>--config</longflag>
+      <description><![CDATA[Configuration file to use, defaults to config.ini for H&E images]]></description>
+      <label>config</label>
+      <default>config.ini</default>
+    </string>    
+    
+  </parameters>
+
+
+<!-- Not sure what output looks like?     -->
+<!--   <parameters>
+    <label>IO</label>
+    <description>Input/output parameters</description>
+    <image>
+      <name>inputImagelist</name>
+      <label>Input Image List</label>
+      <channel>input</channel>
+      <index>0</index>
+      <description>Input images to be processed</description>
+    </image>
+
+
+    <image>
+      <name>outputVolume</name>
+      <label>Output Volume</label>
+      <channel>output</channel>
+      <index>1</index>
+      <description>Output filtered</description>
+    </image>
+  </parameters> -->
+
+</executable>
