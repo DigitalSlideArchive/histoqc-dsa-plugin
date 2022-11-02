@@ -6,7 +6,13 @@ from ctk_cli import CLIArgumentParser
 import os
 
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+
+# TODO: parameterize this so it knows where histoqc is located from the DockerFile
+histoqc_dir = '/opt/HistoQC' # from https://github.com/Theta-Tech-AI/histoqc-dsa-plugin/blob/13a82ab5bb42ca09104d887c1e6e6cff3a839ced/slicer_cli_plugin/Dockerfile#L24
+histoqc_module_subdir = 'histoqc'
 
 
 def get_item(args):
@@ -20,6 +26,7 @@ def get_item(args):
     return {'image_path': image_path, 'item_id': item_id}
 
 
+
 def main(args):
     logging.info('Entering main function')
     logging.info('args = %r' % args)
@@ -27,15 +34,8 @@ def main(args):
     item = get_item(args)
     logging.info(f'item = {item}')
 
+    logging.info(f'Files in {histoqc_dir} = {os.listdir(os.path.join(histoqc_dir,histoqc_module_subdir))}')
     
-
-    pprint.pprint(vars(args), width=1000)
-    with open(args.returnParameterFile, 'w') as f:
-        f.write('>> parsed arguments\n')
-        f.write('%r\n' % args)
-    with open(args.arg1, 'w') as f:
-        f.write('example\n')
-
 
 if __name__ == '__main__':
     main(CLIArgumentParser().parse_args())
