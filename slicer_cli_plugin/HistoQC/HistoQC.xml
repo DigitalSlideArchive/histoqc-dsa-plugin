@@ -13,13 +13,14 @@
     <label>Input Images</label>
     <description>Which image(s) should we run HistoQC on?</description>
 
-    <image>
-        <name>input_image</name>
-        <longflag>image</longflag>
-        <description><![CDATA[An input image to run HistoQC on.]]></description>
-        <label>Input image</label>
-        <channel>input</channel>
-      </image>
+    <item>
+      <name>input_image</name>
+      <longflag>image</longflag>
+      <description>An input image to analyze with HistoQC</description>
+      <label>Input Image</label>
+      <channel>input</channel>
+      <reference parameter="_girder_id_"/>
+    </item>
       
   </parameters>
 
