@@ -23,6 +23,16 @@ def upload_histoqc_outputs(input_folder, output_dir, girder):
     output_folder = get_histoqc_output_folder(input_folder, girder)
     logging.info(f'output_folder = {output_folder}')
 
+    file_pattern = f'{output_dir}/*'
+
+    logging.info(f'Uploading all files in {file_pattern}...')
+    girder.upload(
+        filePattern = file_pattern,
+        parentId = output_folder['_id'],
+        parentType = 'folder'
+    )
+    logging.info('Uploaded.')
+
     for input_item_name, input_item_id in input_folder['items'].items():
         output_subdir = os.path.join(output_dir, input_item_name)
         logging.info(f'Items in {output_subdir} = {os.listdir(output_subdir)}')
