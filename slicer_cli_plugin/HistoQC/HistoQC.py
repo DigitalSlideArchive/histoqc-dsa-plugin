@@ -12,22 +12,31 @@ logging.basicConfig(level=logging.INFO,
                     datefmt='%Y-%m-%d %H:%M:%S')
 
 
-# def getHistoqcOutputFolder(user):
-#     return Folder().createFolder(
-#         parent = user,
-#         parentType='user',
-#         name = histoqc_output_folder_name,
-#         description='Folder to store the histoqc outputs for a user',
-#         public = False,
-#         reuseExisting = True) # reuseExisting will first search for an existing folder
+def get_histoqc_output_folder(input_folder, girder):
+    parent_folder_id = input_folder['id']
+    logging.info(f'parent_folder_id = {parent_folder_id}')
+    return girder.loadOrCreateFolder('histoqc_outputs', parentId=parent_folder_id, parentType='folder')
 
 
-def run_histoqc(input_folder):
+def upload_histoqc_outputs(input_folder, output_dir, girder):
+
+    output_folder = get_histoqc_output_folder(input_folder, girder)
+    logging.info(f'output_folder = {output_folder}')
+
+    for input_item_name, input_item_id in input_folder['items'].items():
+        output_subdir = os.path.join(output_dir, input_item_name)
+        logging.info(f'Items in {output_subdir} = {os.listdir(output_subdir)}')
+
+    raise Exception('Not yet implemented.')
+
+
+
+def run_histoqc(input_folder, girder):
     # we will remember which directory we're currently in and only temporarily move into the histoqc directory for running it
     # TODO: parameterize this so it knows where histoqc is located from the DockerFile
     histoqc_dir = '/opt/HistoQC' # from https://github.com/Theta-Tech-AI/histoqc-dsa-plugin/blob/13a82ab5bb42ca09104d887c1e6e6cff3a839ced/slicer_cli_plugin/Dockerfile#L24
     current_dir = os.getcwd()
-    input_dir = input_folder['input_dir']
+    input_dir = input_folder['local_path']
 
     with tempfile.TemporaryDirectory() as tmp_output_dir:
     
@@ -40,7 +49,8 @@ def run_histoqc(input_folder):
         os.chdir(current_dir)
         logging.info('HistoQC finished running.')
 
-        logging.info(f'Output files = {os.listdir(tmp_output_dir)}')
+        logging.info(f'Output = {os.listdir(tmp_output_dir)}')
+        upload_histoqc_outputs(input_folder, tmp_output_dir, girder)
 
 
 def get_folder(args, girder):
@@ -57,12 +67,21 @@ def get_folder(args, girder):
 
     item_ids = {}
     for filename in filenames:
-        item = next(girder.listItem(folder_id, name=filename, limit=1))
+        logging.info(f'filename = {filename}')
+        try:
+            item = next(girder.listItem(folder_id, name=filename, limit=1))
+        except StopIteration:
+            logging.warning(f'No item found for name {filename}. Skipping.')
+            continue
         logging.info(f'item = {item}')
         item_id = item['_id']
         item_ids[filename] = item_id
     
-    return {'input_dir': input_dir, 'item_ids': item_ids}
+    return {
+        'local_path': input_dir,
+        'id': folder_id,
+        'items': item_ids
+        }
 
 
 def get_girder_client(args):
@@ -80,7 +99,7 @@ def main(args):
     folder = get_folder(args, girder)
     logging.info(f'folder = {folder}')
 
-    run_histoqc(folder)
+    run_histoqc(folder, girder)
     
 
 if __name__ == '__main__':
