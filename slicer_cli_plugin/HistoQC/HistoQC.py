@@ -12,33 +12,15 @@ logging.basicConfig(level=logging.INFO,
                     datefmt='%Y-%m-%d %H:%M:%S')
 
 
-def get_histoqc_output_folder(input_folder, girder):
-    parent_folder_id = input_folder['id']
-    logging.info(f'parent_folder_id = {parent_folder_id}')
-    return girder.loadOrCreateFolder('histoqc_outputs', parentId=parent_folder_id, parentType='folder')
-
-
 def upload_histoqc_outputs(input_folder, output_dir, girder):
-
-    output_folder = get_histoqc_output_folder(input_folder, girder)
-    logging.info(f'output_folder = {output_folder}')
-
-    file_pattern = f'{output_dir}/*'
-
-    logging.info(f'Uploading all files in {file_pattern}...')
+    output_folder = girder.createFolder(
+        name = 'histoqc_outputs',
+        parentId = input_folder['id'],
+        parentType = 'folder')
     girder.upload(
-        filePattern = file_pattern,
+        filePattern = f'{output_dir}/*',
         parentId = output_folder['_id'],
-        parentType = 'folder'
-    )
-    logging.info('Uploaded.')
-
-    for input_item_name, input_item_id in input_folder['items'].items():
-        output_subdir = os.path.join(output_dir, input_item_name)
-        logging.info(f'Items in {output_subdir} = {os.listdir(output_subdir)}')
-
-    raise Exception('Not yet implemented.')
-
+        parentType = 'folder')
 
 
 def run_histoqc(input_folder, girder):
