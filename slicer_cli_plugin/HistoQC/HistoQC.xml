@@ -13,15 +13,33 @@
     <label>Input Images</label>
     <description>Which image(s) should we run HistoQC on?</description>
 
-    <item>
-      <name>input_image</name>
-      <longflag>image</longflag>
-      <description>An input image to analyze with HistoQC</description>
-      <label>Input Image</label>
+    <directory>
+      <name>inputDir</name>
+      <longflag>input-dir</longflag>
+      <description>HistoQC will be run on all items in this folder. After it finishes, when you browse to this folder, below the list of images you will see a table with the HistoQC outputs.</description>
+      <label>Input folder</label>
       <channel>input</channel>
-      <reference parameter="_girder_id_"/>
-    </item>
-      
+    </directory>
+
+  </parameters>
+
+  <parameters advanced="true">
+    <label>Girder API URL and Key</label>
+    <description>A Girder API URL and token for Girder client</description>
+    <string>
+      <name>girderApiUrl</name>
+      <longflag>api-url</longflag>
+      <label>Girder API URL</label>
+      <description>A Girder API URL (e.g., https://girder.example.com:443/api/v1)</description>
+      <default></default>
+    </string>
+    <string>
+      <name>girderToken</name>
+      <longflag>girder-token</longflag>
+      <label>Girder Token</label>
+      <description>A Girder token</description>
+      <default></default>
+    </string>
   </parameters>
 
   <parameters>

@@ -21,12 +21,12 @@ RUN apt-get install -y git python3-pip python3 openslide-tools
     #ENV LANGUAGE pl_PL
     #ENV LC_ALL pl_PL.UTF-8
 
-RUN cd /opt \
-    && git clone https://github.com/choosehappy/HistoQC.git \
-    && pip3 install -r /opt/HistoQC/requirements.txt
-
-RUN pip3 install --pre girder-slicer-cli-web
+RUN cd /opt && git clone https://github.com/choosehappy/HistoQC.git
+RUN pip3 install --upgrade pip
+RUN pip3 install -r /opt/HistoQC/requirements.txt
+RUN pip3 install --pre girder-slicer-cli-web girder-client
 
 COPY . $PWD
+
 
 ENTRYPOINT ["python3", "./cli_list.py"]
