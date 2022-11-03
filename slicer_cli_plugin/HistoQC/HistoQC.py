@@ -23,16 +23,28 @@ def get_histoqc_output_folder(input_folder, girder, token):
     if existing_folder:
         existing_id = existing_folder['_id']
         logging.warning(f'Folder {output_folder_name} already exists with id {existing_id}. Trying to delete first.')
-        girder.sendRestRequest(
-            'DELETE',
-            f'folder/{existing_id}',
-            headers = {'Girder-Token': token})
+        # girder.sendRestRequest(
+        #     'DELETE',
+        #     f'folder/{existing_id}',
+        #     headers = {'Girder-Token': token})
 
-    output_folder = girder.createFolder(
-        name = output_folder_name,
+        # this above code does not seem to work with the sendRestRequest. It errors with:
+        """
+        File "HistoQC/HistoQC.py", line 26, in get_histoqc_output_folder
+            girder.sendRestRequest(
+        File "/usr/local/lib/python3.8/dist-packages/girder_client/__init__.py", line 463, in sendRestRequest
+            raise HttpError(
+        girder_client.HttpError: HTTP error 401: DELETE http://girder:8080/api/v1/folder/63634338159f05a390e16adf
+        Response text: {"message": "You must be logged in.", "type": "access"}
+        """
+        # instead, we'll just use an existing folder (which is problematic because we're potentially keeping stale outputs from previous runs)
+
+    #return girder.createFolder(
+    return girder.loadOrCreateFolder(
+    #    name = output_folder_name,
+        folderName = output_folder_name,
         parentId = input_folder['id'],
-        parentType = 'folder',
-        reuseExisting = False)
+        parentType = 'folder')
 
 
 def upload_histoqc_outputs(input_folder, output_dir, girder, token):
@@ -114,8 +126,6 @@ def main(args):
     
     folder = get_folder(args, girder)
     logging.info(f'folder = {folder}')
-
-    get_histoqc_output_folder(folder, girder, token)
 
     run_histoqc(folder, girder, token)
     
