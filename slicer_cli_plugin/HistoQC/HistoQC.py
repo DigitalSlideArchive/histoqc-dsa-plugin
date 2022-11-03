@@ -89,25 +89,9 @@ def get_folder(args, girder):
     folder_id = os.path.basename(os.path.dirname(input_dir))
     logging.info(f'folder_id = {folder_id}')
 
-    filenames = os.listdir(input_dir)
-    logging.info(f'filenames = {filenames}')
-
-    item_ids = {}
-    for filename in filenames:
-        logging.info(f'filename = {filename}')
-        try:
-            item = next(girder.listItem(folder_id, name=filename, limit=1))
-        except StopIteration:
-            logging.warning(f'No item found for name {filename}. Skipping.')
-            continue
-        logging.info(f'item = {item}')
-        item_id = item['_id']
-        item_ids[filename] = item_id
-    
     return {
         'local_path': input_dir,
-        'id': folder_id,
-        'items': item_ids
+        'id': folder_id
         }
 
 
