@@ -12,18 +12,41 @@ logging.basicConfig(level=logging.INFO,
                     datefmt='%Y-%m-%d %H:%M:%S')
 
 
-def upload_histoqc_outputs(input_folder, output_dir, girder):
-    output_folder = girder.createFolder(
-        name = 'histoqc_outputs',
+def get_histoqc_output_folder(input_folder, girder, token):
+    output_folder_name = 'histoqc_outputs'
+
+    existing_folder = next(girder.listFolder(
         parentId = input_folder['id'],
-        parentType = 'folder')
+        parentFolderType = 'folder',
+        name = output_folder_name, limit=1), None)
+
+    if existing_folder:
+        existing_id = existing_folder['_id']
+        logging.warning(f'Folder {output_folder_name} already exists with id {existing_id}. Trying to delete first.')
+        girder.sendRestRequest(
+            'DELETE',
+            f'folder/{existing_id}',
+            headers = {'Girder-Token': token})
+
+    output_folder = girder.createFolder(
+        name = output_folder_name,
+        parentId = input_folder['id'],
+        parentType = 'folder',
+        reuseExisting = False)
+
+
+def upload_histoqc_outputs(input_folder, output_dir, girder, token):
+
+    output_folder = get_histoqc_output_folder(input_folder, girder, token)
+    logging.info(f'output_folder = {output_folder}')
+
     girder.upload(
         filePattern = f'{output_dir}/*',
         parentId = output_folder['_id'],
         parentType = 'folder')
 
 
-def run_histoqc(input_folder, girder):
+def run_histoqc(input_folder, girder, token):
     # we will remember which directory we're currently in and only temporarily move into the histoqc directory for running it
     # TODO: parameterize this so it knows where histoqc is located from the DockerFile
     histoqc_dir = '/opt/HistoQC' # from https://github.com/Theta-Tech-AI/histoqc-dsa-plugin/blob/13a82ab5bb42ca09104d887c1e6e6cff3a839ced/slicer_cli_plugin/Dockerfile#L24
@@ -32,7 +55,7 @@ def run_histoqc(input_folder, girder):
 
     with tempfile.TemporaryDirectory() as tmp_output_dir:
     
-        logging.info('Running HistoQC on all files. Please wait, this may take a few minutes...')
+        logging.info('HistoQC starting running.')
         os.chdir(histoqc_dir)
         histoqc_output = subprocess.check_output(
             ["python3", "-m", "histoqc",
@@ -42,7 +65,7 @@ def run_histoqc(input_folder, girder):
         logging.info('HistoQC finished running.')
 
         logging.info(f'Output = {os.listdir(tmp_output_dir)}')
-        upload_histoqc_outputs(input_folder, tmp_output_dir, girder)
+        upload_histoqc_outputs(input_folder, tmp_output_dir, girder, token)
 
 
 def get_folder(args, girder):
@@ -78,20 +101,23 @@ def get_folder(args, girder):
 
 def get_girder_client(args):
     gc = girder_client.GirderClient(apiUrl=args.girderApiUrl)
-    gc.setToken(args.girderToken)
-    return gc
+    token = args.girderToken
+    gc.setToken(token)
+    return gc, token
 
 
 def main(args):
     logging.info('Entering main function')
     logging.info('args = %r' % args)
 
-    girder = get_girder_client(args)
+    girder, token = get_girder_client(args)
     
     folder = get_folder(args, girder)
     logging.info(f'folder = {folder}')
 
-    run_histoqc(folder, girder)
+    get_histoqc_output_folder(folder, girder, token)
+
+    run_histoqc(folder, girder, token)
     
 
 if __name__ == '__main__':
