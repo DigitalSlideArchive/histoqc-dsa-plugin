@@ -1,9 +1,35 @@
-import { getCurrentToken } from '@girder/core/auth';
+import { getCurrentToken } from '@girder/core/auth'
+import { restRequest } from '@girder/core/rest'
+
 
 function getHeaders() {
   return {
     "Content-Type": "application/json; charset=utf-8",
     'Girder-Token': getCurrentToken()
+  }
+}
+
+
+function load_histoqc_subfolder(folder_id) {
+  try {
+    const params = {
+      parentId: folder_id,
+      parentType: 'folder',
+      name: 'histoqc_outputs',
+      limit: 50
+    }
+
+    restRequest({
+      method: 'GET',
+      url: 'folder',
+      data: params
+    }).done(function (response) {
+      console.log('response = ', response)
+      const histoqc_output_folder_id = response[0]._id
+      console.log('histoqc_output_folder_id = ', histoqc_output_folder_id)
+    })
+  } catch (error) {
+    console.error('Error fetching subfolder:', error);
   }
 }
 
@@ -130,8 +156,8 @@ export function renderHistoQC(widget, folder_id) {
     </div>
   `
   widget.after(afterHTML)
-  $(histoqc_status_id).hide()
-  generateHistoQCOutputs()
+  load_histoqc_subfolder(folder_id)
+  //generateHistoQCOutputs()
 }
 
 
