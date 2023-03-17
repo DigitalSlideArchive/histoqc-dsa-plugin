@@ -98,30 +98,16 @@ function watchJob(jobId) {
   }, checkSeconds * 1000);     
 }
 
-function getFolderId() {
-  const url = window.location.href
-  const url_arr = url.split('/')
-  const folder_id = url_arr[url_arr.length - 1]
-  return folder_id
-}
-
-
-export function renderHistoQC(callingThis, widget) {
-
-  const url = window.location.href
-  const url_arr = url.split('/')
-  if (url_arr[url_arr.length - 2] != 'folder') {
-      console.log("URL ARR FAILURE ", url_arr)
-      return;
-  }
-
+export function renderHistoQC(widget, folder_id) {
+  console.log('folder_id = ', folder_id)
+  
   window.triggerHistoQCJob = triggerHistoQCJob
   const afterHTML = `
     <div>
 
       <hr><hr>
       <h3>HistoQC</h3>
-      <a href="https://github.com/choosehappy/HistoQC" target="_blank">Github Link</a>
+      <a href="https://github.com/choosehappy/HistoQC" target="_blank">View on Github</a>
       <br>
       <br>
 
@@ -149,9 +135,9 @@ export function renderHistoQC(callingThis, widget) {
 }
 
 
-function generateHistoQCOutputs() {
+function generateHistoQCOutputs(folder_id) {
 
-  const url = getApiRoot() + '/folder/' + getFolderId() + '/histoqc'
+  const url = getApiRoot() + '/folder/' + folder_id + '/histoqc'
   const details = {
     method: 'get',
     headers: getHeaders(),
