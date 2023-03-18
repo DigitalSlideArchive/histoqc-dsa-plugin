@@ -2,6 +2,29 @@ import { getCurrentToken } from '@girder/core/auth'
 import { restRequest } from '@girder/core/rest'
 
 
+const artifact_list = [
+  "thumb_small",
+  "thumb",
+  "areathresh",
+  "blurry",
+  "bright",
+  "coverslip_edge",
+  "dark",
+  "deconv_c0",
+  "deconv_c1",
+  "deconv_c2",
+  "fatlike",
+  "flat",
+  "fuse",
+  "hist",
+  "mask_use",
+  "pen_markings",
+  "small_fill",
+  "small_remove",
+  "spur"
+]
+
+
 function getHeaders() {
   return {
     "Content-Type": "application/json; charset=utf-8",
@@ -10,7 +33,7 @@ function getHeaders() {
 }
 
 
-function load_histoqc_subfolder(folder_id) {
+function load_histoqc_subfolder(folder_id, table_id) {
   restRequest({
     method: 'GET',
     url: 'folder',
@@ -23,12 +46,12 @@ function load_histoqc_subfolder(folder_id) {
     console.log('response = ', response)
     const histoqc_output_folder_id = response[0]._id
     console.log('histoqc_output_folder_id = ', histoqc_output_folder_id)
-    initialize_table(histoqc_output_folder_id)
+    initialize_table(histoqc_output_folder_id, table_id)
   })
 }
 
 
-function initialize_table(histoqc_output_folder_id) {
+function initialize_table(histoqc_output_folder_id, table_id) {
   restRequest({
     method: 'GET',
     url: 'folder',
@@ -38,6 +61,37 @@ function initialize_table(histoqc_output_folder_id) {
     }
   }).done(function (response) {
     console.log('response = ', response)
+
+    const cell_style = 'padding: 5px; border: 3px inset;'
+
+    const table = document.getElementById(table_id)
+    const header_row = document.createElement('tr')
+    for (const artifact_name of ['filename'].concat(artifact_list)) {
+      const cell = document.createElement('th')
+      cell.innerHTML = artifact_name
+      cell.style.cssText = cell_style
+      header_row.appendChild(cell)
+    }
+    table.appendChild(header_row)
+
+    let row_count = 0
+    for (const histoqc_output_subfolder of response) {
+      if (histoqc_output_subfolder.size === 0) continue
+      console.log('histoqc_output_subfolder = ', histoqc_output_subfolder)
+      const subfolder_name = histoqc_output_subfolder.name
+      const subfolder_id = histoqc_output_subfolder._id
+
+      const rowId = 'histoqc-row-' + row_count
+      const row = document.createElement('tr')
+      row.id = rowId;
+      const cell = document.createElement('td')
+      cell.innerHTML = 'hello, world'
+      cell.style.cssText = cell_style
+      row.appendChild(cell)
+      table.appendChild(row)
+
+      row_count++
+    }
   })
 }
 
@@ -157,6 +211,7 @@ export function renderHistoQC(widget, folder_id) {
 
       <div id="histoqc-table-div">
         <p>Loading histoqc results...</p>
+        <table id="histoqc_output_table"></table>
       </div>
       <br>
       <hr><hr>
@@ -164,7 +219,7 @@ export function renderHistoQC(widget, folder_id) {
     </div>
   `
   widget.after(afterHTML)
-  load_histoqc_subfolder(folder_id)
+  load_histoqc_subfolder(folder_id, 'histoqc_output_table')
   //generateHistoQCOutputs()
 }
 
@@ -358,41 +413,3 @@ function parseParallelData(results_tsv) {
   return parsed
 }
 
-
-var DEFAULT_PARAC_ATTRIBUTES = [
-  "levels", 
-  "height", 
-  "width", 
-  "mpp_x", 
-  "mpp_y", 
-  "Magnification", 
-  "pen_markings", 
-  "coverslip_edge", 
-  "bubble", 
-  "nonwhite", 
-  "dark", 
-  "percent_small_tissue_removed", 
-  "percent_small_tissue_filled", 
-  "percent_blurry", 
-  "spur_pixels", 
-  "template1_MSE_hist", 
-  "template2_MSE_hist", 
-  "template3_MSE_hist", 
-  "template4_MSE_hist", 
-  "michelson_contrast", 
-  "rms_contrast", 
-  "grayscale_brightness", 
-  "chan1_brightness", 
-  "chan2_brightness", 
-  "chan3_brightness", 
-  "deconv_c0_mean", 
-  "deconv_c1_mean", 
-  "deconv_c2_mean", 
-  "chuv1_brightness_YUV",
-  "chuv2_brightness_YUV",
-  "chuv3_brightness_YUV",
-  "chan1_brightness_YUV",
-  "chan2_brightness_YUV",
-  "chan3_brightness_YUV",
-  "pixels_to_use"
-];
