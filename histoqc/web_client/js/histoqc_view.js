@@ -11,26 +11,34 @@ function getHeaders() {
 
 
 function load_histoqc_subfolder(folder_id) {
-  try {
-    const params = {
+  restRequest({
+    method: 'GET',
+    url: 'folder',
+    data: {
       parentId: folder_id,
       parentType: 'folder',
-      name: 'histoqc_outputs',
-      limit: 50
+      name: 'histoqc_outputs'
     }
+  }).done(function (response) {
+    console.log('response = ', response)
+    const histoqc_output_folder_id = response[0]._id
+    console.log('histoqc_output_folder_id = ', histoqc_output_folder_id)
+    initialize_table(histoqc_output_folder_id)
+  })
+}
 
-    restRequest({
-      method: 'GET',
-      url: 'folder',
-      data: params
-    }).done(function (response) {
-      console.log('response = ', response)
-      const histoqc_output_folder_id = response[0]._id
-      console.log('histoqc_output_folder_id = ', histoqc_output_folder_id)
-    })
-  } catch (error) {
-    console.error('Error fetching subfolder:', error);
-  }
+
+function initialize_table(histoqc_output_folder_id) {
+  restRequest({
+    method: 'GET',
+    url: 'folder',
+    data: {
+      parentId: histoqc_output_folder_id,
+      parentType: 'folder'
+    }
+  }).done(function (response) {
+    console.log('response = ', response)
+  })
 }
 
 
