@@ -1,5 +1,5 @@
 import { getCurrentToken } from '@girder/core/auth'
-import { restRequest } from '@girder/core/rest'
+import { restRequest, getApiRoot } from '@girder/core/rest'
 
 
 const artifact_list = [
@@ -83,16 +83,19 @@ function initialize_table(histoqc_output_folder_id, table_id) {
 
       const row = document.createElement('tr')
       let cell = document.createElement('td')
-      cell.innerHTML = subfolder_name + ' (id=' + subfolder_id + ')'
+      cell.innerHTML = subfolder_name
       cell.style.cssText = cell_style
       row.appendChild(cell)
 
       for (const artifact_name of artifact_list) {
         const artifact_filename = subfolder_name + '_' + artifact_name + '.png'
         cell = document.createElement('td')
-        cell.innerHTML = artifact_filename
+        cell.innerHTML = 'Loading ' + artifact_filename + ' ...'
         cell.style.cssText = cell_style
+        cell.id = crypto.randomUUID()
         row.appendChild(cell)
+
+        load_histoqc_output_cell(cell.id, subfolder_id, artifact_filename)
       }
 
       table.appendChild(row)
@@ -103,14 +106,36 @@ function initialize_table(histoqc_output_folder_id, table_id) {
 }
 
 
+function load_histoqc_output_cell(cell_id, folder_id, output_name) {
+  console.log('cell_id, folder_id = ', cell_id, folder_id, output_name)
+  restRequest({
+    method: 'GET',
+    url: 'item',
+    data: {
+      folderId: folder_id,
+      name: output_name,
+      limit: 1
+    }
+  }).done(function (response) {
+    const histoqc_output_item_id = response[0]._id
+    restRequest({
+      method: 'POST',
+      url: 'item/' + histoqc_output_item_id + '/tiles',
+      compression: 'webp',
+      error: null
+    }).always(() => {
+      const thumbnail_url = getApiRoot() + '/item/' + histoqc_output_item_id + '/tiles/thumbnail'
+      document.getElementById(cell_id).innerHTML = '<img src="' + thumbnail_url + '"></img>'
+    })
+  })
+}
+
+
 var histoqc_status_id = '#histoqc-status'
 var histoqc_table_id = '#histoqc-table-div'
 var histoqc_button_id = "#histoqc-button"
 var histoqc_parallel_id = "#histoqc-parallel-div"
 
-
-// the /api/v1 can be gotten from some girder javascript call
-function getApiRoot() { return window.location.origin + '/api/v1'}
 
 export function triggerHistoQCJob() {
 
