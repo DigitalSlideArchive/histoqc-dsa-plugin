@@ -81,13 +81,20 @@ function initialize_table(histoqc_output_folder_id, table_id) {
       const subfolder_name = histoqc_output_subfolder.name
       const subfolder_id = histoqc_output_subfolder._id
 
-      const rowId = 'histoqc-row-' + row_count
       const row = document.createElement('tr')
-      row.id = rowId;
-      const cell = document.createElement('td')
-      cell.innerHTML = 'hello, world'
+      let cell = document.createElement('td')
+      cell.innerHTML = subfolder_name + ' (id=' + subfolder_id + ')'
       cell.style.cssText = cell_style
       row.appendChild(cell)
+
+      for (const artifact_name of artifact_list) {
+        const artifact_filename = subfolder_name + '_' + artifact_name + '.png'
+        cell = document.createElement('td')
+        cell.innerHTML = artifact_filename
+        cell.style.cssText = cell_style
+        row.appendChild(cell)
+      }
+
       table.appendChild(row)
 
       row_count++
