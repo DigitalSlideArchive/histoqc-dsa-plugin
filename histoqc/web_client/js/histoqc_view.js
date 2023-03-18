@@ -1,4 +1,3 @@
-import { getCurrentToken } from '@girder/core/auth'
 import { restRequest, getApiRoot } from '@girder/core/rest'
 
 
@@ -23,14 +22,6 @@ const artifact_list = [
   "small_remove",
   "spur"
 ]
-
-
-function getHeaders() {
-  return {
-    "Content-Type": "application/json; charset=utf-8",
-    'Girder-Token': getCurrentToken()
-  }
-}
 
 
 function load_histoqc_subfolder(folder_id, table_id) {
@@ -131,92 +122,19 @@ function load_histoqc_output_cell(cell_id, folder_id, output_name) {
 }
 
 
-var histoqc_status_id = '#histoqc-status'
-var histoqc_table_id = '#histoqc-table-div'
-var histoqc_button_id = "#histoqc-button"
-var histoqc_parallel_id = "#histoqc-parallel-div"
+function triggerHistoQCJob(folder_id) {
 
-
-export function triggerHistoQCJob() {
-
-  const apiRoot = getApiRoot()
-  const triggerJobUrl = apiRoot + '/folder/' + getFolderId() + '/histoqc'
-  console.log('triggerJobUrl', triggerJobUrl)
-  
-  const postDetails = {
-    method: 'post',
-    headers: getHeaders(),
-    mode: "cors"
-  }
-
-  fetch(triggerJobUrl, postDetails)
-    .then( response => {
-      if ( response.status !== 200 ) {
-        console.log('Looks like there was a problem. Status Code: ' + response.status);
-        return;
-      }
-      console.log( response.headers.get("Content-Type"));
-      return response.json();
-    }).then( myJson => {
-      console.log(JSON.stringify(myJson));
-
-      const jobId = myJson['_id']
-      $(histoqc_button_id).hide()
-      $(histoqc_status_id).text('HistoQC job ' + jobId + ' has started. Please wait...')
-      $(histoqc_status_id).show()
-      $(histoqc_table_id).hide()
-
-      watchJob(jobId)
-
-    }).catch( err => {
-      console.log( 'Fetch Error :-S', err );
-    });
-}
-
-function watchJob(jobId) {
-  const checkSeconds = 2
-  var logTimer = setInterval(function(){
-    const url = getApiRoot() + '/job/' + jobId
-
-    const details = {
-      method: 'get',
-      headers: getHeaders(),
-      mode: "cors"
+  restRequest({
+    method: 'POST',
+    url: 'slicer_cli_web/histoqc_latest/HistoQC/run',
+    data: {
+      inputDir: folder_id,
     }
-
-    fetch(url, details)
-      .then( response => {
-        if ( response.status !== 200 ) {
-          console.log('Looks like there was a problem. Status Code: ' + response.status);
-          return;
-        }
-        console.log( response.headers.get("Content-Type"));
-        return response.json();
-      }).then( myJson => {
-        console.log(JSON.stringify(myJson));
-        const log = myJson['log']
-        let text = ''
-        for (const logLine of log) {
-          const newline = '&#13;&#10;' // https://stackoverflow.com/a/8627926
-          text = text + newline.repeat(2) + logLine 
-        }
-        if (log.length > 0) {
-          $(histoqc_status_id).html(text)
-        }
-        $(histoqc_status_id).scrollTop($(histoqc_status_id)[0].scrollHeight) // https://stackoverflow.com/a/9170709
-
-        const status = myJson['status']
-        if (status > 2) {
-          clearInterval(logTimer);
-          //$(histoqc_status_id).hide()
-          $(histoqc_table_id).show()
-          generateHistoQCTable()
-          $(histoqc_button_id).show()
-        }
-      });
-
-  }, checkSeconds * 1000);     
+  }).done(function (response) {
+    console.log(response)
+  })
 }
+
 
 export function renderHistoQC(widget, folder_id) {
   console.log('folder_id = ', folder_id)
@@ -231,10 +149,7 @@ export function renderHistoQC(widget, folder_id) {
       <br>
       <br>
 
-      <button id="histoqc-button" onclick="triggerHistoQCJob()">Click here to (re)run HistoQC on all images in this folder.</button>
-      <br>
-
-      <textarea style="overflow:auto;" cols="100" rows="10" id="histoqc-status"></textarea>
+      <button id="histoqc-button">Click here to (re)run HistoQC on all images in this folder.</button>
       <br>
 
       <div id="histoqc-parallel-div">
@@ -242,7 +157,6 @@ export function renderHistoQC(widget, folder_id) {
       <br>
 
       <div id="histoqc-table-div">
-        <p>Loading histoqc results...</p>
         <table id="histoqc_output_table"></table>
       </div>
       <br>
@@ -251,54 +165,13 @@ export function renderHistoQC(widget, folder_id) {
     </div>
   `
   widget.after(afterHTML)
+  document.getElementById('histoqc-button').addEventListener('click', () => {
+    triggerHistoQCJob(folder_id);
+  })
+
   load_histoqc_subfolder(folder_id, 'histoqc_output_table')
-  //generateHistoQCOutputs()
 }
 
-
-function generateHistoQCOutputs(folder_id) {
-
-  const url = getApiRoot() + '/folder/' + folder_id + '/histoqc'
-  const details = {
-    method: 'get',
-    headers: getHeaders(),
-    mode: "cors"
-  }
-  fetch(url, details)
-    .then( response => {
-      if ( response.status !== 200 ) {
-        console.log('Looks like there was a problem. Status Code: ' + response.status);
-        return;
-      }
-      console.log( response.headers.get("Content-Type"));
-      return response.json();
-    }).then( histoqc_response => {
-      
-      const grouped_histoqc_output = histoqc_response['grouped']
-      const grouped_url = getApiRoot() + '/item/' + grouped_histoqc_output['_id'] + '/download'
-      //console.log(grouped_url)
-
-      fetch(grouped_url, details)
-      .then( grouped_response => {
-        if ( grouped_response.status !== 200 ) {
-          console.log('Looks like there was a problem. Status Code: ' + response.status);
-          return;
-        }
-        //console.log(grouped_response)
-        return grouped_response.text();
-      }).then(results_tsv => {
-
-        console.log(results_tsv)
-
-        const parallelHTML = generateHistoQCParallelPlot(results_tsv)
-        const tableHTML = generateHistoQCTable(histoqc_response['individual'])
-
-        $(histoqc_table_id).html(tableHTML)
-        $(histoqc_table_id).show()
-        
-      })
-    })
-}
 
 function generateHistoQCParallelPlot(results_tsv) {
   // let html = '<h4>Parallel Plot For All Images In Folder</h4>'
@@ -364,58 +237,6 @@ function generateHistoQCParallelPlot(results_tsv) {
   // const selected_cases = dataset.map(function (d) {return d["filename"];});
 
   return ''
-}
-
-function generateHistoQCTable(histoqc_outputs) {
-
-  let tableHTML = ""
-  let any_rows = false
-
-  let row1;
-  for (const row of histoqc_outputs) {
-    if (row['histoqc_outputs'].length > 0) {
-      any_rows = true
-      row1 = row;
-      break;
-    }
-  }
-
-  if (any_rows) {
-
-    tableHTML = "<h4>HistoQC Individual Outputs</h4><table>"
-
-    row1['histoqc_outputs'].sort((a, b) => a.histoqcType < b.histoqcType ? 1 : -1)
-    tableHTML += `<tr> <th> Source </th>`
-    row1['histoqc_outputs'].forEach(column => {
-      tableHTML += `<th> ${column.histoqcType} </th>`
-    })
-    tableHTML += `</tr>`
-    histoqc_outputs.forEach(row => {
-      if (row['histoqc_outputs'].length > 0) {
-          tableHTML += '<tr>'
-          tableHTML += `
-                  <td>
-                      ${row['source_image'].name}
-                  </td>
-          `
-        row['histoqc_outputs'].sort((a, b) => a.histoqcType < b.histoqcType ? 1 : -1)
-        row["histoqc_outputs"].forEach(column => {
-          tableHTML += `<td style="padding:5px;"> 
-                  <a href="/#item/${column._id}">
-                  <img src="/api/v1/item/${column._id}/tiles/thumbnail"/>
-                  </a>
-              </td>`
-        })
-        tableHTML += '</tr>'
-      }
-    })
-    tableHTML += '</table>'
-  } else {
-    tableHTML += "<p>No HistoQC outputs detected. Please rerun it.</p>"
-  }
-
-  return tableHTML
-
 }
 
 function parseParallelData(results_tsv) {
