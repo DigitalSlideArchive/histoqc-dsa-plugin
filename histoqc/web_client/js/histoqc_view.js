@@ -122,7 +122,8 @@ function load_histoqc_output_cell(cell_id, folder_id, output_name) {
 }
 
 
-function triggerHistoQCJob(folder_id) {
+function triggerHistoQCJob(folder_id, div_id) {
+  document.getElementById(div_id).innerHTML = '<p>Starting HistoQC job, please wait...</p>'
 
   restRequest({
     method: 'POST',
@@ -131,7 +132,10 @@ function triggerHistoQCJob(folder_id) {
       inputDir: folder_id,
     }
   }).done(function (response) {
-    console.log(response)
+    const job_id = response._id
+    const job_url = '#job/' + job_id
+    console.log('job_url = ', job_url)
+    document.getElementById(div_id).innerHTML = '<a target="_blank" href="' + job_url + '">HistoQC job submitted. Click here to view logs.</a>'
   })
 }
 
@@ -149,7 +153,9 @@ export function renderHistoQC(widget, folder_id) {
       <br>
       <br>
 
-      <button id="histoqc-button">Click here to (re)run HistoQC on all images in this folder.</button>
+      <div id="run-histoqc-job">
+        <button id="histoqc-button">Click here to (re)run HistoQC on all images in this folder.</button>
+      </div>
       <br>
 
       <div id="histoqc-parallel-div">
@@ -166,7 +172,7 @@ export function renderHistoQC(widget, folder_id) {
   `
   widget.after(afterHTML)
   document.getElementById('histoqc-button').addEventListener('click', () => {
-    triggerHistoQCJob(folder_id);
+    triggerHistoQCJob(folder_id, 'run-histoqc-job');
   })
 
   load_histoqc_subfolder(folder_id, 'histoqc_output_table')
