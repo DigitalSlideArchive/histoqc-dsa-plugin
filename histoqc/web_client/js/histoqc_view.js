@@ -117,7 +117,7 @@ function load_histoqc_output_cell(cell_id, folder_id, output_name) {
       error: null
     }).always(() => {
       const thumbnail_url = getApiRoot() + '/item/' + histoqc_output_item_id + '/tiles/thumbnail'
-      document.getElementById(cell_id).innerHTML = '<img src="' + thumbnail_url + '"></img>'
+      document.getElementById(cell_id).innerHTML = '<a target="_blank" href="#item/' + histoqc_output_item_id + '"><img src="' + thumbnail_url + '"></img></a>'
     })
   })
 }
