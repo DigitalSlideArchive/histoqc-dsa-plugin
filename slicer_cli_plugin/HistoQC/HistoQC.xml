@@ -13,7 +13,7 @@
     <label>Input Images</label>
     <description>Which image(s) should we run HistoQC on?</description>
 
-    <directory reference="_girder_id_" defaultRelativePath="..">
+    <directory>
       <name>inputDir</name>
       <longflag>input-dir</longflag>
       <description>HistoQC will be run on all items in this folder. After it finishes, when you browse to this folder, below the list of images you will see a table with the HistoQC outputs.</description>
