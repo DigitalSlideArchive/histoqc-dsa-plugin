@@ -22,6 +22,7 @@ const artifact_list = [
   "small_remove",
   "spur"
 ]
+const histoqc_output_folder_name = 'histoqc_outputs'
 
 
 function load_histoqc_subfolder(folder_id, table_id) {
@@ -31,7 +32,7 @@ function load_histoqc_subfolder(folder_id, table_id) {
     data: {
       parentId: folder_id,
       parentType: 'folder',
-      name: 'histoqc_outputs'
+      name: histoqc_output_folder_name
     }
   }).done(function (response) {
     console.log('response = ', response)
@@ -121,22 +122,40 @@ function load_histoqc_output_cell(cell_id, folder_id, output_name) {
   })
 }
 
-
 function triggerHistoQCJob(folder_id, div_id) {
-  document.getElementById(div_id).innerHTML = '<p>Starting HistoQC job, please wait...</p>'
+  document.getElementById(div_id).innerHTML = '<p>Starting HistoQC job, please wait...</p>';
 
   restRequest({
-    method: 'POST',
-    url: 'slicer_cli_web/histoqc_latest/HistoQC/run',
+    method: 'GET',
+    url: 'folder',
     data: {
-      inputDir: folder_id,
+      parentId: folder_id,
+      parentType: 'folder',
+      name: histoqc_output_folder_name
     }
-  }).done(function (response) {
-    const job_id = response._id
-    const job_url = '#job/' + job_id
-    console.log('job_url = ', job_url)
-    document.getElementById(div_id).innerHTML = '<a target="_blank" href="' + job_url + '">HistoQC job submitted. Click here to view logs.</a>'
-  })
+  }).then((response) => {
+    if (response.length > 0) {
+      return restRequest({
+        method: 'DELETE',
+        url: 'folder/' + response[0]._id
+      });  
+    }
+  }, () => {
+    return Promise.resolve();
+  }).then(() => {
+    restRequest({
+      method: 'POST',
+      url: 'slicer_cli_web/histoqc_latest/HistoQC/run',
+      data: {
+        inputDir: folder_id,
+        girderApiUrl: "",
+        girderToken: ""
+      }
+    }).done((response) => {
+      const job_url = '#job/' + response._id
+      document.getElementById(div_id).innerHTML = '<a target="_blank" href="' + job_url + '">HistoQC job submitted. Click here to view logs.</a>'
+    });
+  });
 }
 
 
@@ -177,98 +196,3 @@ export function renderHistoQC(widget, folder_id) {
 
   load_histoqc_subfolder(folder_id, 'histoqc_output_table')
 }
-
-
-function generateHistoQCParallelPlot(results_tsv) {
-  // let html = '<h4>Parallel Plot For All Images In Folder</h4>'
-  // html += '<textarea style="overflow:auto;" cols="100" rows="10" id="histoqc-parallel">'
-  // html += results_tsv
-  // html += '</textarea>'
-  // html += '<br><p>(Under construction)</p></br>'
-
-  // const parsed = parseParallelData(results_tsv)
-
-  // const parallel_div = $(histoqc_parallel_id)
-  // parallel_div.empty();
-
-  // const parac_width = parallel_div.width()
-  // const parac_height = parallel_div.height()
-  // console.log('parac_width', parac_width)
-  // console.log('parac_height', parac_height)
-
-  // const PARAC_SVG = d3.select(histoqc_parallel_id).append("svg")
-  //   .attr("id", "parac-svg")
-  //   .attr("width", parac_width)
-  //   .attr("height", parac_height)
-  //   .append("g")
-  // console.log('PARAC_SVG', PARAC_SVG)
-
-  // const xScale = d3.scale.ordinal().rangePoints([0, parac_width], 1),
-  //     yScale = {},
-  //     dragging = {};
-
-  // const line = d3.svg.line().interpolate('linear')
-  // const axis = d3.svg.axis().ticks(5).orient("right")
-
-  // // build feature list
-  // const ORIGINAL_FEATURE_LIST = Object.keys(parsed[0]);
-  // // update current selection
-  // const ORIGINAL_CASE_LIST = parsed.map(function (d) {
-  //   return d["filename"];
-  // });
-  // const PARA_COOR_SELECTED = ORIGINAL_CASE_LIST;
-  // const CURRENT_PARALLEL_ATTRIBUTES = ORIGINAL_FEATURE_LIST.filter(function(d) {
-  //   // in DEFAULT_PARAC_ATTRIBUTES and is numeric
-  //   if (typeof(parsed[0][d]) == "number" && 
-  //     DEFAULT_PARAC_ATTRIBUTES.indexOf(d) != -1) {
-  //     return true;
-  //   }
-  //   return false;
-  // });
-  // console.log('CURRENT_PARALLEL_ATTRIBUTES', CURRENT_PARALLEL_ATTRIBUTES)
-
-  // const data = parsed.map(function (d) {
-  //   const attr_value_dict = {
-  //     case_name: d["filename"],
-  //     gid: d["groupid"]
-  //   };
-  //   for (var i = 0; i < CURRENT_PARALLEL_ATTRIBUTES.length; i++) {
-  //     attr_value_dict[CURRENT_PARALLEL_ATTRIBUTES[i]] = 
-  //     d[CURRENT_PARALLEL_ATTRIBUTES[i]];
-  //   }
-  //   return attr_value_dict;
-  // });
-  // console.log('data', data)
-
-  // const selected_cases = dataset.map(function (d) {return d["filename"];});
-
-  return ''
-}
-
-function parseParallelData(results_tsv) {
-
-  const dataset_text = results_tsv.split(/#dataset:\s?/)[1];  
-
-  const parsed = d3.tsv.parse(dataset_text, function (d) {
-    if (d.hasOwnProperty("")) delete d[""];
-    for (var key in d) {
-      if ($.isNumeric(d[key])) {
-        d[key] = +d[key];
-      }
-    }
-    // add placeholder for cohortfinder results
-    if (!d.hasOwnProperty("embed_x")) d["embed_x"] = null;
-    if (!d.hasOwnProperty("embed_y")) d["embed_y"] = null;
-    // non-negative integers in cohortfinder results
-    if (!d.hasOwnProperty("groupid")) d["groupid"] = -1;
-    // 0 or 1 in cohortfinder results
-    if (!d.hasOwnProperty("testind")) d["testind"] = 2;
-    if (!d.hasOwnProperty("sitecol")) d["sitecol"] = "None";
-    if (!d.hasOwnProperty("labelcol")) d["labelcol"] = "None";
-    return d;
-  });
-  console.log(parsed)
-  
-  return parsed
-}
-
