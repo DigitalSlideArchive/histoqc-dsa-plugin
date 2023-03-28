@@ -35,18 +35,10 @@ function load_histoqc_subfolder(folder_id, table_id) {
       name: histoqc_output_folder_name
     }
   }).done(function (response) {
-    console.log('response = ', response)
     const histoqc_output_folder_id = response[0]._id
-    console.log('histoqc_output_folder_id = ', histoqc_output_folder_id)
     initialize_table(histoqc_output_folder_id, table_id)
-
     renderParallelData(histoqc_output_folder_id);
-    // fetchData().then((tsvData) => {
-    //   const data = parseTsv(tsvData);
-    //   createParallelPlot(data);
-    // });    
   });
-
 }
 
 
@@ -211,7 +203,6 @@ export function renderHistoQC(widget, folder_id) {
 
 // main.js
 function renderParallelData(histoqc_output_folder_id) {
-
   restRequest({
     method: 'GET',
     url: 'item',
@@ -225,42 +216,22 @@ function renderParallelData(histoqc_output_folder_id) {
     restRequest({
       method: 'GET',
       url: 'item/' + tsv_id + '/download'
-    }).done(data => {
-      console.log(data);
+    }).done(tsv_data => {
+      const { data, headers } = parseTsv(tsv_data);
+      createParallelPlot(data, headers);
     });
   });
-
-  // // Construct the Girder API endpoint URL for downloading the TSV file
-  // const downloadUrl = getApiRoot() + '/item/' `${getApiRoot()}/item/${itemId}/download`;
-
-
-  // // Use the Girder REST API to download the TSV file
-  // restRequest({
-  //   url: downloadUrl,
-  //   method: 'GET'
-  // })
-  // .then(data => {
-  //   // Convert the TSV data into a JavaScript object
-  //   const rows = data.split("\n").map(row => row.split("\t"));
-  //   const headers = rows.shift();
-  //   const jsonData = rows.map(row => {
-  //     const obj = {};
-  //     headers.forEach((header, i) => obj[header] = row[i]);
-  //     return obj;
-  //   });
-  //   const response = await fetch('path/to/your/data.tsv');
-  //   const tsvData = await response.text();
-  //   return tsvData;
-  // }
 }
 
 
-function parseTsv(tsvData) {
-  const lines = tsvData.split('\n');
-  const headers = lines[17].split('\t');
+function parseTsv(tsv_data) {
+  const lines = tsv_data.split('\n');
+
+  const header_row_index = lines.findIndex((line) => line.startsWith('#dataset:filename'));
+  const headers = lines[header_row_index].split('\t');
 
   const data = [];
-  for (let i = 18; i < lines.length - 1; i++) {
+  for (let i = header_row_index + 1; i < lines.length - 1; i++) {
     const values = lines[i].split('\t');
     const dataObj = {};
     for (let j = 0; j < headers.length; j++) {
@@ -268,19 +239,21 @@ function parseTsv(tsvData) {
     }
     data.push(dataObj);
   }
-  return data;
+  return { data, headers };
 }
 
-function createParallelPlot(data) {
-  const dimensions = [
-    { label: 'mpp_x', values: data.map((d) => d.mpp_x) },
-    { label: 'mpp_y', values: data.map((d) => d.mpp_y) },
-    { label: 'pen_markings', values: data.map((d) => d.pen_markings) },
-    { label: 'coverslip_edge', values: data.map((d) => d.coverslip_edge) },
-    { label: 'bright', values: data.map((d) => d.bright) },
-    // Add more dimensions here as needed
-  ];
 
+function createParallelPlot(data, headers) {
+
+  const createDimension = (label) => ({
+    label,
+    values: data.map((d) => d[label]),
+  });
+  const dimensions = headers
+    .map((header) => createDimension(header))
+    .filter((dimension) => {
+      return !dimension.values.some((value) => isNaN(value));
+    });
   const plotData = [
     {
       type: 'parcoords',
@@ -289,9 +262,28 @@ function createParallelPlot(data) {
     },
   ];
 
-  const layout = {
-    title: 'Parallel Plot',
-  };
+  const fontSize = 10;
+  const font = `${fontSize}px`;
+  const maxLabelWidth = headers.reduce((maxWidth, header) => {
+    const labelWidth = measureTextWidth(header, font);
+    return Math.max(maxWidth, labelWidth);
+  }, 0);
+  const paddingBetweenLabels = 4;
+  const totalWidth = (maxLabelWidth + paddingBetweenLabels) * (headers.length - 1);
 
+  const layout = {
+    title: 'HistoQC Parallel Plot',
+    width: totalWidth,
+  };
   Plotly.newPlot('plotly-parallel', plotData, layout);
+
+}
+
+
+function measureTextWidth(text, font) {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  context.font = font;
+  const metrics = context.measureText(text);
+  return metrics.width;
 }
