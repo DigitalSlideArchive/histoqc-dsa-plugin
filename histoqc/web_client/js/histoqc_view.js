@@ -39,7 +39,14 @@ function load_histoqc_subfolder(folder_id, table_id) {
     const histoqc_output_folder_id = response[0]._id
     console.log('histoqc_output_folder_id = ', histoqc_output_folder_id)
     initialize_table(histoqc_output_folder_id, table_id)
-  })
+
+    renderParallelData(histoqc_output_folder_id);
+    // fetchData().then((tsvData) => {
+    //   const data = parseTsv(tsvData);
+    //   createParallelPlot(data);
+    // });    
+  });
+
 }
 
 
@@ -159,12 +166,14 @@ function triggerHistoQCJob(folder_id, div_id) {
 }
 
 
+
 export function renderHistoQC(widget, folder_id) {
   console.log('folder_id = ', folder_id)
-  
+
   window.triggerHistoQCJob = triggerHistoQCJob
   const afterHTML = `
     <div>
+      <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
       <hr><hr>
       <h3>HistoQC</h3>
@@ -177,7 +186,7 @@ export function renderHistoQC(widget, folder_id) {
       </div>
       <br>
 
-      <div id="histoqc-parallel-div">
+      <div id="plotly-parallel">
       </div>
       <br>
 
@@ -195,4 +204,94 @@ export function renderHistoQC(widget, folder_id) {
   })
 
   load_histoqc_subfolder(folder_id, 'histoqc_output_table')
+
+  
+}
+
+
+// main.js
+function renderParallelData(histoqc_output_folder_id) {
+
+  restRequest({
+    method: 'GET',
+    url: 'item',
+    data: {
+      folderId: histoqc_output_folder_id,
+      name: 'results.tsv',
+      limit: 1
+    }
+  }).done(data => {
+    const tsv_id = data[0]._id
+    restRequest({
+      method: 'GET',
+      url: 'item/' + tsv_id + '/download'
+    }).done(data => {
+      console.log(data);
+    });
+  });
+
+  // // Construct the Girder API endpoint URL for downloading the TSV file
+  // const downloadUrl = getApiRoot() + '/item/' `${getApiRoot()}/item/${itemId}/download`;
+
+
+  // // Use the Girder REST API to download the TSV file
+  // restRequest({
+  //   url: downloadUrl,
+  //   method: 'GET'
+  // })
+  // .then(data => {
+  //   // Convert the TSV data into a JavaScript object
+  //   const rows = data.split("\n").map(row => row.split("\t"));
+  //   const headers = rows.shift();
+  //   const jsonData = rows.map(row => {
+  //     const obj = {};
+  //     headers.forEach((header, i) => obj[header] = row[i]);
+  //     return obj;
+  //   });
+  //   const response = await fetch('path/to/your/data.tsv');
+  //   const tsvData = await response.text();
+  //   return tsvData;
+  // }
+}
+
+
+function parseTsv(tsvData) {
+  const lines = tsvData.split('\n');
+  const headers = lines[17].split('\t');
+
+  const data = [];
+  for (let i = 18; i < lines.length - 1; i++) {
+    const values = lines[i].split('\t');
+    const dataObj = {};
+    for (let j = 0; j < headers.length; j++) {
+      dataObj[headers[j]] = isNaN(values[j]) ? values[j] : parseFloat(values[j]);
+    }
+    data.push(dataObj);
+  }
+  return data;
+}
+
+function createParallelPlot(data) {
+  const dimensions = [
+    { label: 'mpp_x', values: data.map((d) => d.mpp_x) },
+    { label: 'mpp_y', values: data.map((d) => d.mpp_y) },
+    { label: 'pen_markings', values: data.map((d) => d.pen_markings) },
+    { label: 'coverslip_edge', values: data.map((d) => d.coverslip_edge) },
+    { label: 'bright', values: data.map((d) => d.bright) },
+    // Add more dimensions here as needed
+  ];
+
+  const plotData = [
+    {
+      type: 'parcoords',
+      line: { color: 'blue' },
+      dimensions: dimensions,
+    },
+  ];
+
+  const layout = {
+    title: 'Parallel Plot',
+  };
+
+  Plotly.newPlot('plotly-parallel', plotData, layout);
 }
