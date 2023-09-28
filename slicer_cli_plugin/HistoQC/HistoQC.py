@@ -19,6 +19,7 @@ girder.setToken(args.girderToken)
 
 input_dir = args.inputDir
 logging.info(f'{input_dir = }')
+logging.info('{os.listdir(input_dir) = ' + repr(os.listdir(input_dir)) + '}')
 
 # by convention, it appears that the folder id is name of the parent directory - there is probably a better way to directly pass that in from the slicer cli
 folder_id = os.path.basename(os.path.dirname(input_dir))
@@ -46,7 +47,7 @@ with tempfile.TemporaryDirectory() as tmp_output_dir:
 
     os.chdir(current_dir)
 
-    logging.info(f'{os.listdir(tmp_output_dir) = }')
+    logging.info('{os.listdir(tmp_output_dir) = ' + os.listdir(tmp_output_dir) + '}')
 
     girder.upload(
         filePattern = f'{tmp_output_dir}/*',

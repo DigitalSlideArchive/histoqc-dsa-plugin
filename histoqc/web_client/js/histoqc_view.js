@@ -155,14 +155,14 @@ function triggerHistoQCJob(folder_id, div_id) {
       return restRequest({
         method: 'DELETE',
         url: 'folder/' + response[0]._id
-      });  
+      });
     }
   }, () => {
     return Promise.resolve();
   }).then(() => {
     restRequest({
       method: 'POST',
-      url: 'slicer_cli_web/histoqc_latest/HistoQC/run',
+      url: 'slicer_cli_web/thetatech_histoqc-dsa_latest/HistoQC/run',
       data: {
         inputDir: folder_id,
         girderApiUrl: "",
@@ -215,7 +215,7 @@ export function renderHistoQC(widget, folder_id) {
 
   load_histoqc_subfolder(folder_id, 'histoqc_output_table')
 
-  
+
 }
 
 
@@ -230,14 +230,16 @@ function renderParallelData(histoqc_output_folder_id) {
       limit: 1
     }
   }).done(data => {
-    const tsv_id = data[0]._id
-    restRequest({
-      method: 'GET',
-      url: 'item/' + tsv_id + '/download'
-    }).done(tsv_data => {
-      const { data, headers } = parseTsv(tsv_data);
-      createParallelPlot(data, headers);
-    });
+    if (!data || !data.length) {
+      const tsv_id = data[0]._id
+      restRequest({
+        method: 'GET',
+        url: 'item/' + tsv_id + '/download'
+      }).done(tsv_data => {
+        const { data, headers } = parseTsv(tsv_data);
+        createParallelPlot(data, headers);
+      });
+    }
   });
 }
 
