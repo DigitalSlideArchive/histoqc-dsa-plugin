@@ -162,7 +162,8 @@ function triggerHistoQCJob(folder_id, div_id) {
   }).then(() => {
     restRequest({
       method: 'POST',
-      url: 'slicer_cli_web/thetatech_histoqc-dsa_latest/HistoQC/run',
+      // url: 'slicer_cli_web/dsarchive_histoqc_latest/HistoQC/run',
+      url: 'slicer_cli_web/ghcr.io_digitalslidearchive_histoqc-dsa-plugin_production/HistoQC/run',
       data: {
         inputDir: folder_id,
         girderApiUrl: "",
@@ -230,7 +231,7 @@ function renderParallelData(histoqc_output_folder_id) {
       limit: 1
     }
   }).done(data => {
-    if (!data || !data.length) {
+    if (data && data.length) {
       const tsv_id = data[0]._id
       restRequest({
         method: 'GET',

@@ -1,0 +1,44 @@
+name: Docker Package
+
+on:
+  push:
+    tags: "*"
+    branches:
+      - production
+  pull_request:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: token
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for the Docker image
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: "{{defaultContext}}:slicer_cli_plugin"
+          file: Dockerfile
+          push: ${{ github.actor != 'dependabot[bot]' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
