@@ -22,10 +22,15 @@ logging.info(f'{args = }')
 girder = girder_client.GirderClient(apiUrl=args.girderApiUrl)
 girder.setToken(args.girderToken)
 
-conf = open('/opt/HistoQC/histoqc/config/config.ini').read()
-conf = conf.replace('confirm_base_mag: False', 'confirm_base_mag: False\nbase_mag: 20')
-conf = open('/opt/HistoQC/histoqc/config/config.ini', 'w').write(conf)
-
+confpath = '/opt/HistoQC/histoqc/config/' + args.config
+if os.path.exists(confpath):
+    conf = open(confpath).read()
+    if '\nbase_mag' not in conf:
+        logging.info('Adding base_mag to %s', confpath)
+        conf = conf.replace('confirm_base_mag: False', 'confirm_base_mag: False\nbase_mag: 20')
+        conf = open(confpath, 'w').write(conf)
+else:
+    confpath = None
 
 input_dir = args.inputDir
 logging.info(f'{input_dir = }')
@@ -97,11 +102,13 @@ with tempfile.TemporaryDirectory() as tmp_output_dir:
 
     os.chdir(histoqc_dir)
 
-    histoqc_output = subprocess.check_output([
+    cmd = [
         "python3", "-m", "histoqc",
         '-o', tmp_output_dir,
         f'{input_dir}/*'
-    ])
+    ] + (['-c', confpath] if confpath else [])
+    logging.info('Running %r', cmd)
+    histoqc_output = subprocess.check_output(cmd)
 
     os.chdir(current_dir)
 

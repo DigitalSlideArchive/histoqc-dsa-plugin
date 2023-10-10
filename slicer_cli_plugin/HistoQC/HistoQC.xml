@@ -123,7 +123,7 @@
       <longflag>--config</longflag>
       <description><![CDATA[Configuration file to use, defaults to config.ini for H&E images]]></description>
       <label>config</label>
-      <default>config.ini</default>
+      <default>config_dsa.ini</default>
     </string>    
     
   </parameters>
