@@ -35,6 +35,9 @@ function load_histoqc_subfolder(folder_id, table_id) {
       name: histoqc_output_folder_name
     }
   }).done(function (response) {
+    if (!response || !response.length) {
+      return;
+    }
     const histoqc_output_folder_id = response[0]._id
     initialize_table(histoqc_output_folder_id, table_id)
     renderParallelData(histoqc_output_folder_id);
